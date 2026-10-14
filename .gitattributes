@@ -21,6 +21,10 @@ Makefile           text eol=lf
 .gitmodules        text eol=lf
 .yamllint          text eol=lf
 
+# Sourced by bash (Git Bash / WSL); a stray CR corrupts every path value.
+.kavi.env          text eol=lf
+.kavi.env.example  text eol=lf
+
 # Source, config, docs.
 *.py               text eol=lf
 *.pyi              text eol=lf

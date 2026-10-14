@@ -12,7 +12,9 @@
 #   QAIRT_SDK_ROOT=/custom/path source scripts/qairt-env.sh
 #
 # This script:
-# Defaults to ~/Qualcomm/AIStack/QAIRT/2.31.0.250130
+#   - Defaults QAIRT_SDK_ROOT to C:\Qualcomm\AIStack\QAIRT\2.31.0.250130 (Windows)
+#     or $HOME/Qualcomm/AIStack/QAIRT/2.31.0.250130, and ANDROID_NDK_ROOT to
+#     C:\android_sdk\ndk\26.1.10909125 or $HOME/Android/Sdk/ndk/26.1.10909125
 #   - Creates .venv-qairt/ in the repo if missing (Python 3.10, qairt deps)
 #   - Sources $QAIRT_SDK_ROOT/bin/envsetup.sh (sets QNN_SDK_ROOT, SNPE_ROOT)
 #   - Exports LD_LIBRARY_PATH and PYTHONPATH for SDK + converter venv
@@ -28,9 +30,38 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# ---- Defaults ----
-: "${QAIRT_SDK_ROOT:=$HOME/Qualcomm/AIStack/QAIRT/2.31.0.250130}"
+# ---- Defaults --------------------------------------------------------------
+# Windows (Git Bash / MSYS) installers put the SDK at C:\Qualcomm\...; Linux and
+# macOS installs live under $HOME. Prefer whichever exists on this host, and
+# drop a value that is set but points nowhere, so a stale inherited variable
+# cannot shadow the default and break the path checks below.
+if [[ -n "${QAIRT_SDK_ROOT:-}" && ! -d "$QAIRT_SDK_ROOT" ]]; then
+	echo "[qairt-env] Ignoring QAIRT_SDK_ROOT='$QAIRT_SDK_ROOT' (not a directory)." >&2
+	unset QAIRT_SDK_ROOT
+fi
+KAVI_QAIRT_DEFAULT="/c/Qualcomm/AIStack/QAIRT/2.31.0.250130"
+if [[ ! -d "$KAVI_QAIRT_DEFAULT" ]]; then
+	KAVI_QAIRT_DEFAULT="$HOME/Qualcomm/AIStack/QAIRT/2.31.0.250130"
+fi
+: "${QAIRT_SDK_ROOT:=$KAVI_QAIRT_DEFAULT}"
+unset KAVI_QAIRT_DEFAULT
 export QAIRT_SDK_ROOT
+
+# ---- Android NDK (optional) -------------------------------------------------
+# Only needed by the qnn-model-lib / context-binary steps (see
+# bench/qnn/convert_to_qnn.sh); same Windows-first fallback as above.
+if [[ -n "${ANDROID_NDK_ROOT:-}" && ! -d "$ANDROID_NDK_ROOT" ]]; then
+	echo "[qairt-env] Ignoring ANDROID_NDK_ROOT='$ANDROID_NDK_ROOT' (not a directory)." >&2
+	unset ANDROID_NDK_ROOT
+fi
+KAVI_NDK_DEFAULT="/c/android_sdk/ndk/26.1.10909125"
+if [[ ! -d "$KAVI_NDK_DEFAULT" ]]; then
+	KAVI_NDK_DEFAULT="$HOME/Android/Sdk/ndk/26.1.10909125"
+fi
+if [[ -z "${ANDROID_NDK_ROOT:-}" && -d "$KAVI_NDK_DEFAULT" ]]; then
+	export ANDROID_NDK_ROOT="$KAVI_NDK_DEFAULT"
+fi
+unset KAVI_NDK_DEFAULT
 
 # ---- Resolve real paths ----
 QAIRT_SDK_ROOT="$(cd "$QAIRT_SDK_ROOT" 2>/dev/null && pwd)" || {

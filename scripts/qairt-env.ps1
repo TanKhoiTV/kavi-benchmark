@@ -13,7 +13,10 @@
         . .\scripts\qairt-env.ps1
 
     It will:
-      - default QAIRT_SDK_ROOT to $HOME\Qualcomm\AIStack\QAIRT\2.31.0.250130
+      - default QAIRT_SDK_ROOT to C:\Qualcomm\AIStack\QAIRT\2.31.0.250130 if it
+        exists, otherwise $HOME\Qualcomm\AIStack\QAIRT\2.31.0.250130, and
+        ANDROID_NDK_ROOT to C:\android_sdk\ndk\26.1.10909125 if it exists,
+        otherwise $HOME\Android\Sdk\ndk\26.1.10909125
       - create .venv-qairt (Python 3.10) with the converter dependencies
       - add the SDK python dir to PYTHONPATH
       - locate the converter bin directory and add it to PATH
@@ -38,14 +41,50 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 
 # ---- QAIRT_SDK_ROOT --------------------------------------------------------
+# Windows installers put the SDK at C:\Qualcomm\...; some hosts keep it under
+# $HOME\Qualcomm\.... Prefer whichever exists on this machine, and drop a value
+# that is set but points nowhere so a stale inherited variable cannot shadow the
+# default and trip the check below.
+if ($SdkRoot -and -not (Test-Path -LiteralPath $SdkRoot)) {
+    Write-Warning "[qairt-env] Ignoring QAIRT_SDK_ROOT='$SdkRoot' (not a directory)."
+    $SdkRoot = $null
+}
 if (-not $SdkRoot) {
-    $SdkRoot = Join-Path $HOME "Qualcomm\AIStack\QAIRT\2.31.0.250130"
+    $WindowsRoot = "C:\Qualcomm\AIStack\QAIRT\2.31.0.250130"
+    $SdkRoot = if (Test-Path -LiteralPath $WindowsRoot) {
+        $WindowsRoot
+    }
+    else {
+        Join-Path $HOME "Qualcomm\AIStack\QAIRT\2.31.0.250130"
+    }
 }
 if (-not (Test-Path -LiteralPath $SdkRoot)) {
     throw "[qairt-env] QAIRT_SDK_ROOT does not exist: $SdkRoot"
 }
 $env:QAIRT_SDK_ROOT = (Resolve-Path -LiteralPath $SdkRoot).Path
-if ($NdkRoot) { $env:ANDROID_NDK_ROOT = $NdkRoot }
+
+# ---- ANDROID_NDK_ROOT (optional) -------------------------------------------
+# Only needed by the qnn-model-lib / context-binary steps; same fallback logic
+# as QAIRT_SDK_ROOT above.
+if ($NdkRoot -and -not (Test-Path -LiteralPath $NdkRoot)) {
+    Write-Warning "[qairt-env] Ignoring ANDROID_NDK_ROOT='$NdkRoot' (not a directory)."
+    $NdkRoot = $null
+}
+if (-not $NdkRoot) {
+    $NdkCandidates = @(
+        "C:\android_sdk\ndk\26.1.10909125",
+        (Join-Path $HOME "Android\Sdk\ndk\26.1.10909125")
+    )
+    foreach ($candidate in $NdkCandidates) {
+        if (Test-Path -LiteralPath $candidate) {
+            $NdkRoot = $candidate
+            break
+        }
+    }
+}
+if ($NdkRoot) {
+    $env:ANDROID_NDK_ROOT = (Resolve-Path -LiteralPath $NdkRoot).Path
+}
 
 # ---- Converter venv (Python 3.10) -----------------------------------------
 # The SDK's compiled modules link against Python 3.10; the project venv is 3.12.
