@@ -85,16 +85,6 @@ def fake_venv(repo_root: Path, platform_name: str) -> Path:
     return interpreter
 
 
-def bash_path(path: Path) -> str:
-    """Spell *path* so a Windows ``bash.exe`` can open it.
-
-    Kept for reference: passing a path in *argv* to Git Bash is unreliable
-    (MSYS eats or mangles it), which is why the sourceable-payload test feeds
-    the script through stdin instead.
-    """
-    return _shell_path(path, "msys" if os.name == "nt" else "posix")
-
-
 def resolved(
     tmp_path: Path, platform_name: str, *, environ: dict[str, str] | None = None
 ):
@@ -223,7 +213,26 @@ class TestRootResolution:
         assert env.ndk_root == ndk
 
     def test_missing_sdk_names_the_environment_variable(self, tmp_path: Path) -> None:
-        env = resolve(CONFIG, platform_name="posix", home=tmp_path, environ={})
+        """Nothing installed anywhere: the message must name the variable to set.
+
+        The version is deliberately unmatchable so the probe cannot hit a real
+        SDK at one of the candidate locations on the *host* running the suite
+        (inside WSL, /mnt/c/Qualcomm is a live install).
+        """
+        impossible = KaviConfig(
+            qairt_version="0.0.0-none",
+            ndk_version="0.0.0-none",
+            qairt_env_var="QAIRT_SDK_ROOT",
+            ndk_env_var="ANDROID_NDK_ROOT",
+        )
+        env = resolve(
+            impossible,
+            platform_name="posix",
+            home=tmp_path,
+            environ={},
+            repo_root=tmp_path / "repo",
+        )
+        assert env.qairt_source == "none"
         problems = env.problems()
         assert problems
         assert "QAIRT_SDK_ROOT" in problems[0]
@@ -269,17 +278,41 @@ class TestOutput:
         for payload in (format_bash(env), format_powershell(env), format_json(env)):
             payload.encode("ascii")
 
-    def test_msys_path_spelling(self, tmp_path: Path) -> None:
-        env = resolved(tmp_path, "posix", environ={"/no/such/var": "x"})
-        msys_env = resolve(
+    def test_msys_path_spelling(self) -> None:
+        """Drive-letter paths become /c/... for Git Bash; everything else is left alone.
+
+        Uses literal Windows-style paths rather than ``tmp_path``: on the Linux CI
+        runner ``tmp_path`` has no drive letter, so asserting on it would only
+        hold on a Windows host.
+        """
+        assert _shell_path(Path("C:/Qualcomm/AIStack"), "msys") == "/c/Qualcomm/AIStack"
+        assert _shell_path(Path("D:/android_sdk/ndk"), "msys") == "/d/android_sdk/ndk"
+        # Already-POSIX paths, and the posix/native spellings, are untouched.
+        assert _shell_path(Path("/home/dmin/Qualcomm"), "msys") == "/home/dmin/Qualcomm"
+        assert (
+            _shell_path(Path("C:/Qualcomm/AIStack"), "posix") == "C:/Qualcomm/AIStack"
+        )
+        assert _shell_path(Path("C:/Qualcomm/AIStack"), "native") == str(
+            Path("C:/Qualcomm/AIStack")
+        )
+
+    def test_format_bash_rewrites_windows_roots_for_git_bash(
+        self, tmp_path: Path
+    ) -> None:
+        """The whole payload, not just the helper: a Windows root reaches bash as /c/..."""
+        env = resolve(
             CONFIG,
             platform_name="windows",
             home=tmp_path,
             environ={},
-            repo_root=env.repo_root,
+            qairt_root=Path("C:/fake/Qualcomm/AIStack/QAIRT/2.31.0.250130"),
         )
-        assert _shell_path(msys_env.qairt_root, "msys").startswith("/c/")
-        assert _shell_path(msys_env.qairt_root, "native")[1:3] == ":\\"
+        payload = format_bash(env)
+        assert (
+            "export QAIRT_SDK_ROOT=/c/fake/Qualcomm/AIStack/QAIRT/2.31.0.250130"
+            in payload
+        )
+        assert "C:/fake" not in payload
 
     def test_bash_output_is_sourceable(self, tmp_path: Path) -> None:
         """Whatever the layout, the emitted payload must set the variables.
