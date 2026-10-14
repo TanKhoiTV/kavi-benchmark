@@ -1,11 +1,12 @@
-# Ownership map for kavi-prototype (-> kavi-benchmark after the
-# re-organization; see #129).
+# Ownership map for kavi-prototype -- the host-side benchmark, the eval-model pins,
+# the manifest schema and the published gate thresholds.
+# Context: TanKhoiTV/kavi-prototype#129
 #
-# Deliberately a blanket line: with three members, per-area ownership would not
-# describe anything real yet. The practical effect is that GitHub auto-requests
-# the other owners on every PR -- this repo currently has PRs sitting unapproved
-# because nothing requests a reviewer.
+# Advisory only: `main`'s ruleset requires the `lint` check and resolved review
+# threads, but not approval from a code owner. These owners produce review requests,
+# not enforced approval.
 #
-# Refine into per-area owners once the re-organization lands.
+# The on-device Android app lives in a separate private repository and carries its
+# own CODEOWNERS file.
 
 *  @TanKhoiTV @aFlyingSeal @winterSolstice25
