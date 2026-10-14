@@ -1,9 +1,10 @@
 """Assert the public boundary: no private-track artifacts in this repository.
 
-The repository split keeps the on-device track private (``kavi-android``) and the
-host-side benchmark here. This check is what *measures* that boundary, so it runs
-in ``make check`` and therefore in the required CI job: a file whose type belongs
-to the private track cannot reach ``main``.
+The project is split across three repositories: this umbrella repo and
+``kavi-prototype`` (now the host-side benchmark) are public, while the on-device
+Android track (``kavi-android``) is private. This check is what *measures* that
+boundary, so it runs in CI: a file whose type belongs to the private track cannot
+reach ``main``, and the private repo cannot become a submodule of a public one.
 
 It scans the **tracked** file list -- exactly what a clone receives -- and
 reports three kinds of finding:
@@ -14,11 +15,14 @@ reports three kinds of finding:
    models, and machine-local configuration.
 3. Signing and credential material.
 
-It also asserts the structural invariant the split calls out: there is no ``git``
-gitlink (submodule entry) pointing at the private repository.
+It also asserts the structural invariant the split calls out: no gitlink
+(submodule entry) points at the private repository. A gitlink to a *public*
+sibling is legitimate -- the umbrella repo tracks the benchmark as ``prototype/``
+-- so allowed paths are passed in explicitly with ``--allow-gitlink`` rather than
+being baked into the rules; each repo supplies its own list.
 
-Stdlib-only and self-contained on purpose, so the same file can be dropped into
-the sibling public repository (``aivoice-2026``) without a Python environment.
+The same file is used by ``kavi-prototype``, and is stdlib-only and
+self-contained on purpose so the two copies stay identical.
 
 Exit status is non-zero when anything is found.
 """
@@ -29,7 +33,7 @@ import argparse
 import fnmatch
 import subprocess
 import sys
-from collections.abc import Iterable, Sequence
+from collections.abc import Collection, Iterable, Sequence
 from pathlib import Path, PurePosixPath
 from typing import NamedTuple
 
@@ -145,11 +149,13 @@ def scan(paths: Iterable[str]) -> list[Finding]:
     return sorted(found, key=lambda finding: (finding.path, finding.rule))
 
 
-def gitlink_findings(index_entries: Iterable[str]) -> list[Finding]:
+def gitlink_findings(
+    index_entries: Iterable[str], allowed: Collection[str] = ()
+) -> list[Finding]:
     """Find gitlinks in ``git ls-files -s`` output, split on NUL or newlines.
 
     Each entry reads ``<mode> <object> <stage>\\t<path>``. A gitlink is what makes
-    a submodule: the public repo must never record one for the private one.
+    a submodule. Paths in *allowed* are public siblings this repo may track.
     """
     found: list[Finding] = []
     for entry in index_entries:
@@ -160,6 +166,8 @@ def gitlink_findings(index_entries: Iterable[str]) -> list[Finding]:
         if mode != GITLINK_MODE:
             continue
         path = rest.rpartition("\t")[2] or rest
+        if path in allowed:
+            continue
         found.append(
             Finding(
                 "gitlink",
@@ -168,6 +176,27 @@ def gitlink_findings(index_entries: Iterable[str]) -> list[Finding]:
             )
         )
     return sorted(found, key=lambda finding: finding.path)
+
+
+def submodule_entries(text: str) -> list[tuple[str, str]]:
+    """Return ``(section header, path)`` for every section in ``.gitmodules``.
+
+    Sections without a ``path`` key are skipped -- a gitlink in the index is what
+    makes a submodule, and that is checked separately.
+    """
+    entries: list[tuple[str, str]] = []
+    header = ""
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(SUBMODULE_SECTION):
+            header = stripped
+            continue
+        if not header or not stripped.lower().startswith("path"):
+            continue
+        _, _, value = stripped.partition("=")
+        entries.append((header, value.strip()))
+        header = ""
+    return entries
 
 
 def submodule_sections(text: str) -> list[str]:
@@ -211,17 +240,20 @@ def index_entries(repo_root: Path) -> list[str]:
     return [entry for entry in output.split("\0") if entry]
 
 
-def check(repo_root: Path) -> tuple[list[str], list[Finding]]:
+def check(
+    repo_root: Path, allowed_gitlinks: Collection[str] = ()
+) -> tuple[list[str], list[Finding]]:
     """Run every boundary check, returning the scanned paths and all findings."""
     paths = tracked_paths(repo_root)
     found = scan(paths)
-    found += gitlink_findings(index_entries(repo_root))
+    found += gitlink_findings(index_entries(repo_root), allowed_gitlinks)
     gitmodules = repo_root / ".gitmodules"
     if gitmodules.is_file():
-        sections = submodule_sections(gitmodules.read_text(encoding="utf-8"))
+        text = gitmodules.read_text(encoding="utf-8")
         found += [
-            Finding("gitmodules", ".gitmodules", f"declares a submodule: {section}")
-            for section in sections
+            Finding("gitmodules", entry_path, f"declares a submodule: {header}")
+            for header, entry_path in submodule_entries(text)
+            if entry_path not in allowed_gitlinks
         ]
     return paths, sorted(found, key=lambda finding: (finding.path, finding.rule))
 
@@ -249,6 +281,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Repository to inspect (default: this file's repository).",
     )
     parser.add_argument(
+        "--allow-gitlink",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help=(
+            "Submodule path that is a public sibling and therefore allowed "
+            "(repeatable). Without it, any gitlink is a finding."
+        ),
+    )
+    parser.add_argument(
         "paths",
         nargs="*",
         help=(
@@ -263,7 +305,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             paths = list(args.paths)
             found = scan(paths)
         else:
-            paths, found = check(args.repo_root)
+            paths, found = check(args.repo_root, args.allow_gitlink)
     except RuntimeError as exc:
         print(f"[leak-check] {exc}", file=sys.stderr)
         return 2
