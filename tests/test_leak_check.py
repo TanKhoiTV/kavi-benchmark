@@ -18,6 +18,7 @@ from scripts.leak_check import (
     gitlink_findings,
     main,
     scan,
+    submodule_entries,
     submodule_sections,
     tracked_paths,
 )
@@ -154,6 +155,21 @@ class TestGitlinks:
         found = gitlink_findings(["160000 a 0\tzz", "160000 b 0\taa"])
         assert [finding.path for finding in found] == ["aa", "zz"]
 
+    def test_allow_list_only_covers_the_paths_given(self) -> None:
+        """The umbrella repo allows its public submodule; the private one never is."""
+        entries = ["160000 a 0\tprototype", "160000 b 0\tandroid"]
+        found = gitlink_findings(entries, ["prototype"])
+        assert [finding.path for finding in found] == ["android"]
+
+    def test_submodule_entries_are_parsed(self) -> None:
+        text = (
+            "# a comment\n"
+            '[submodule "prototype"]\n'
+            "\tpath = prototype\n"
+            "\turl = git@github.com:TanKhoiTV/kavi-prototype.git\n"
+        )
+        assert submodule_entries(text) == [('[submodule "prototype"]', "prototype")]
+
     def test_comment_only_gitmodules_declares_nothing(self) -> None:
         text = "# the app repo is deliberately NOT a submodule\n#\n# cli: clone it\n"
         assert submodule_sections(text) == []
@@ -188,6 +204,13 @@ class TestMain:
         captured = capsys.readouterr()
         assert "OK" in captured.out
         assert captured.out.isascii()
+
+    def test_allow_gitlink_flag_is_accepted(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Unused here (there is no submodule), but it keeps both copies one file."""
+        assert main(["--allow-gitlink", "prototype"]) == 0
+        assert "OK" in capsys.readouterr().out
 
     def test_explicit_private_path_exits_nonzero(
         self, capsys: pytest.CaptureFixture[str]
