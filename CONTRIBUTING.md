@@ -184,6 +184,25 @@ identically on Windows, Linux, and macOS. The OS-specific pieces are the
 **QAIRT conversion toolchain** (Phase 4) and, in the Android repo, the
 **Android SDK/NDK install**.
 
+**Per-machine paths have one owner.** `scripts/env.py` resolves the SDK root, the
+NDK root, the converter bin dir, the host library dir, the SDK envsetup flavour
+and the Python 3.10 converter venv for the current platform. The shell entry
+points (`scripts/qairt-env.sh`, `scripts/qairt-env.ps1`) and the conversion
+pipeline (`bench/qnn/convert_to_qnn.sh`) consume that resolver instead of
+deriving paths themselves, so the four genuinely platform-dependent facts live
+in exactly one place:
+
+| fact | POSIX (WSL/Linux) | Windows (Git Bash/PowerShell) |
+| --- | --- | --- |
+| venv layout | `.venv-qairt/bin` | `.venv-qairt/Scripts` |
+| converter bin dir | `bin/x86_64-linux-clang` | `bin/x86_64-windows-msvc` |
+| host library dir | `lib/x86_64-linux-clang` (`LD_LIBRARY_PATH`) | `lib/x86_64-windows-msvc` (`PATH`) |
+| SDK envsetup | `bin/envsetup.sh` | `bin/envsetup.ps1` |
+
+`uv run python -m scripts.env --check` reports what it resolved and where each
+answer came from (argument, environment variable or probe); `--format
+bash|powershell|json` emits the environment for a shell or a tool.
+
 **You do not need a hybrid Windows + WSL2 machine — a single OS is enough:**
 
 - **Windows-only** — install Python + `uv`, and (for Phase 4) the Windows QAIRT
@@ -201,15 +220,19 @@ identically on Windows, Linux, and macOS. The OS-specific pieces are the
   ezwinports.make`) or use the Git-for-Windows shell. If you would rather skip
   `make`, every target is a plain `uv run …` command — copy it from the
   `Makefile`.
-- **QAIRT conversion on Windows**: dot-source `scripts\qairt-env.ps1` (the
-  PowerShell counterpart of the Linux `scripts/qairt-env.sh`). It creates the
-  Python 3.10 `.venv-qairt`, sets `PYTHONPATH`, locates the converter bin
-  directory (which varies between SDK releases), and verifies the converters.
-  It is less battle-tested than the Linux script — report your SDK layout if the
-  bin directory is not found.
-- **Environment variables**: `.kavi.env` uses bash `export` syntax and is meant
-  for Git Bash/WSL. In PowerShell set the variables directly, or use
-  `scripts\qairt-env.ps1`.
+- **QAIRT conversion on Windows**: dot-source `scripts\qairt-env.ps1`. It creates
+  the Python 3.10 `.venv-qairt`, imports the environment resolved by
+  `scripts/env.py`, and verifies the converters. The Windows SDK ships the same
+  tools with mixed suffixes (`.exe`, `.bat`, and extension-less Python scripts),
+  which the resolver's lookup tolerates. `scripts/qairt-env.sh` is the
+  Linux/WSL counterpart and deliberately *refuses* to run under Git Bash, where
+  `uv` would build a `Scripts/` venv around those same Windows binaries.
+- **Environment variables**: `.kavi.env` (bash `export` syntax, for Git
+  Bash/WSL) is optional and declares only the two per-machine *roots*. Anything
+  derived from them is computed by `scripts/env.py`, and a variable that is set
+  but points nowhere — a stale value inherited from Windows — is ignored with a
+  warning instead of being used. In PowerShell, dot-source
+  `scripts\qairt-env.ps1` or set the variables directly.
 
 **Our setup (reference, not a requirement):** everything runs in **WSL2** on
 this box — the Android app is built there against a Linux SDK/NDK (app repo:
@@ -222,7 +245,7 @@ hopping is required.
 **QAIRT conversion toolchain (Phase 4):** host build-time only, needed solely
 when producing HTP v73 context binaries. See `docs/reference/phase-4-qnn-plan.md`
 §1 for the exact env contract (`QAIRT_SDK_ROOT`, `ANDROID_NDK_ROOT`,
-`qairt-env.sh`, `.venv-qairt`).
+`scripts/env.py`, `qairt-env.sh`/`qairt-env.ps1`, `.venv-qairt`).
 
 ## Note on `archive/`
 

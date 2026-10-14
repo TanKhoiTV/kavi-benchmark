@@ -1,33 +1,32 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    QAIRT SDK environment helper for Windows (PowerShell).
+    QAIRT environment helper for Windows (PowerShell adapter).
 
 .DESCRIPTION
-    Dot-source this script to set up the environment for QAIRT model conversion
-    (qnn-onnx-converter, qnn-model-lib-generator, qnn-context-binary-generator)
-    on Windows.
+    All path and platform resolution lives in scripts/env.py — the single source
+    of truth for the SDK root, the converter bin dir, the host library dir, the
+    SDK envsetup flavour and the Python 3.10 converter venv. This script only
+    creates the venv, imports the resolved environment and verifies it.
 
         . .\scripts\qairt-env.ps1
         $env:QAIRT_SDK_ROOT = "D:\Qualcomm\AIStack\QAIRT\2.31.0.250130"
         . .\scripts\qairt-env.ps1
 
-    It will:
-      - default QAIRT_SDK_ROOT to C:\Qualcomm\AIStack\QAIRT\2.31.0.250130 if it
-        exists, otherwise $HOME\Qualcomm\AIStack\QAIRT\2.31.0.250130, and
-        ANDROID_NDK_ROOT to C:\android_sdk\ndk\26.1.10909125 if it exists,
-        otherwise $HOME\Android\Sdk\ndk\26.1.10909125
-      - create .venv-qairt (Python 3.10) with the converter dependencies
-      - add the SDK python dir to PYTHONPATH
-      - locate the converter bin directory and add it to PATH
-      - validate that the converter executables are reachable
+.PARAMETER SdkRoot
+    QAIRT SDK root; defaults to $env:QAIRT_SDK_ROOT, and is probed when unset.
+
+.PARAMETER NdkRoot
+    Android NDK root; defaults to $env:ANDROID_NDK_ROOT, and is probed when unset.
 
 .NOTES
-    This mirrors scripts/qairt-env.sh (the Linux helper). The Windows SDK's bin
-    directory name varies between QAIRT releases, so this script *searches* for
-    the directory that contains qnn-onnx-converter instead of hardcoding it.
-    If your install still is not found, run the SDK's own environment setup
-    (or a Visual Studio developer prompt) first, then re-run this script.
+    Mirrors scripts\qairt-env.sh (the Linux/WSL helper), which refuses to run
+    under Git Bash for the same reason this one exists: the platform decides the
+    converter triple, the venv layout and the envsetup flavour. VIRTUAL_ENV and
+    PATH come from the resolver rather than from Scripts\Activate.ps1, which
+    would need an ExecutionPolicy exception.
+
+    Requires uv: https://docs.astral.sh/uv/
 #>
 
 [CmdletBinding()]
@@ -39,125 +38,64 @@ param(
 $ErrorActionPreference = "Stop"
 
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$ResolverPath = Join-Path $RepoRoot "scripts\env.py"
+Push-Location $RepoRoot
+try {
+    if ($SdkRoot) { $env:QAIRT_SDK_ROOT = $SdkRoot }
+    if ($NdkRoot) { $env:ANDROID_NDK_ROOT = $NdkRoot }
 
-# ---- QAIRT_SDK_ROOT --------------------------------------------------------
-# Windows installers put the SDK at C:\Qualcomm\...; some hosts keep it under
-# $HOME\Qualcomm\.... Prefer whichever exists on this machine, and drop a value
-# that is set but points nowhere so a stale inherited variable cannot shadow the
-# default and trip the check below.
-if ($SdkRoot -and -not (Test-Path -LiteralPath $SdkRoot)) {
-    Write-Warning "[qairt-env] Ignoring QAIRT_SDK_ROOT='$SdkRoot' (not a directory)."
-    $SdkRoot = $null
-}
-if (-not $SdkRoot) {
-    $WindowsRoot = "C:\Qualcomm\AIStack\QAIRT\2.31.0.250130"
-    $SdkRoot = if (Test-Path -LiteralPath $WindowsRoot) {
-        $WindowsRoot
+    # Prefer a bare interpreter: the resolver is stdlib + PyYAML, so `uv run`
+    # would sync the whole project environment just to resolve paths. Escalate
+    # when that interpreter cannot read .kavi.yaml, since probing needs the
+    # pinned versions. The WindowsApps path is the Microsoft Store stub for
+    # `python`, which is not a real interpreter.
+    $envPy = @("python", "py") |
+        ForEach-Object { Get-Command $_ -ErrorAction SilentlyContinue } |
+        Where-Object { $_.Source -and $_.Source -notlike "*\WindowsApps\*" } |
+        Select-Object -First 1
+    $useBare = $false
+    if ($envPy) {
+        & $envPy.Source -c "import yaml" 2>$null
+        $useBare = $LASTEXITCODE -eq 0
+    }
+    if ($useBare) {
+        $resolverExe = $envPy.Source
+        $resolverArgs = @($ResolverPath)
     }
     else {
-        Join-Path $HOME "Qualcomm\AIStack\QAIRT\2.31.0.250130"
+        Write-Host "[qairt-env] No local Python with PyYAML; using 'uv run' to resolve paths."
+        $resolverExe = "uv"
+        $resolverArgs = @("run", "--project", $RepoRoot, "python", $ResolverPath)
     }
-}
-if (-not (Test-Path -LiteralPath $SdkRoot)) {
-    throw "[qairt-env] QAIRT_SDK_ROOT does not exist: $SdkRoot"
-}
-$env:QAIRT_SDK_ROOT = (Resolve-Path -LiteralPath $SdkRoot).Path
 
-# ---- ANDROID_NDK_ROOT (optional) -------------------------------------------
-# Only needed by the qnn-model-lib / context-binary steps; same fallback logic
-# as QAIRT_SDK_ROOT above.
-if ($NdkRoot -and -not (Test-Path -LiteralPath $NdkRoot)) {
-    Write-Warning "[qairt-env] Ignoring ANDROID_NDK_ROOT='$NdkRoot' (not a directory)."
-    $NdkRoot = $null
-}
-if (-not $NdkRoot) {
-    $NdkCandidates = @(
-        "C:\android_sdk\ndk\26.1.10909125",
-        (Join-Path $HOME "Android\Sdk\ndk\26.1.10909125")
-    )
-    foreach ($candidate in $NdkCandidates) {
-        if (Test-Path -LiteralPath $candidate) {
-            $NdkRoot = $candidate
-            break
+    # Create the venv if needed, then verify: abort before exporting anything if
+    # the SDK, NDK or converters are not where the platform says they should be.
+    & $resolverExe @resolverArgs --bootstrap --check
+    if ($LASTEXITCODE -ne 0) {
+        throw "[qairt-env] Environment check failed - fix the problem(s) above and retry."
+    }
+
+    $payload = & $resolverExe @resolverArgs --format powershell
+    if ($LASTEXITCODE -ne 0) {
+        throw "[qairt-env] Could not resolve the environment (scripts/env.py failed)."
+    }
+    Invoke-Expression $payload
+
+    # The vendor SDK's own PowerShell envsetup sets QNN_SDK_ROOT/SNPE_ROOT.
+    if (Test-Path -LiteralPath $env:KAVI_ENVSETUP) {
+        try {
+            . $env:KAVI_ENVSETUP
         }
-    }
-}
-if ($NdkRoot) {
-    $env:ANDROID_NDK_ROOT = (Resolve-Path -LiteralPath $NdkRoot).Path
-}
-
-# ---- Converter venv (Python 3.10) -----------------------------------------
-# The SDK's compiled modules link against Python 3.10; the project venv is 3.12.
-$VenvDir = Join-Path $RepoRoot ".venv-qairt"
-$VenvPython = Join-Path $VenvDir "Scripts\python.exe"
-if (-not (Test-Path -LiteralPath $VenvPython)) {
-    if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
-        throw "[qairt-env] uv is not installed. Install it: irm https://astral.sh/uv/install.ps1 | iex"
-    }
-    Write-Host "[qairt-env] Creating converter venv at $VenvDir ..."
-    uv venv --python 3.10 $VenvDir
-    uv pip install --python $VenvPython `
-        --index-strategy unsafe-best-match `
-        onnx==1.16.1 onnxruntime==1.17.1 "numpy<2" onnx-simplifier `
-        scipy lxml absl-py pandas pyyaml
-}
-$env:VIRTUAL_ENV = $VenvDir
-$env:PATH = (Join-Path $VenvDir "Scripts") + ";" + $env:PATH
-Write-Host "[qairt-env] Activated venv: $VenvDir"
-
-# ---- SDK python packages ---------------------------------------------------
-$SdkPython = Join-Path $env:QAIRT_SDK_ROOT "lib\python"
-if (Test-Path -LiteralPath $SdkPython) {
-    $env:PYTHONPATH = if ($env:PYTHONPATH) { "$SdkPython;$env:PYTHONPATH" } else { $SdkPython }
-}
-
-# ---- Locate the converter bin directory ------------------------------------
-$Converters = @(
-    "qnn-onnx-converter",
-    "qnn-model-lib-generator",
-    "qnn-context-binary-generator"
-)
-
-$BinDir = $null
-$BinRoot = Join-Path $env:QAIRT_SDK_ROOT "bin"
-if (Test-Path -LiteralPath $BinRoot) {
-    foreach ($candidate in Get-ChildItem -LiteralPath $BinRoot -Directory -ErrorAction SilentlyContinue) {
-        if (Get-ChildItem -LiteralPath $candidate.FullName -Filter "qnn-onnx-converter*" -ErrorAction SilentlyContinue) {
-            $BinDir = $candidate.FullName
-            break
+        catch {
+            Write-Warning "[qairt-env] Could not dot-source $env:KAVI_ENVSETUP : $_"
         }
-    }
-    if (-not $BinDir -and (Get-ChildItem -LiteralPath $BinRoot -Filter "qnn-onnx-converter*" -ErrorAction SilentlyContinue)) {
-        $BinDir = $BinRoot
-    }
-}
-if ($BinDir) { $env:PATH = $BinDir + ";" + $env:PATH }
-
-# ---- Verification ----------------------------------------------------------
-Write-Host ""
-Write-Host "============================================"
-Write-Host " QAIRT Environment - Verification"
-Write-Host "============================================"
-Write-Host " QAIRT_SDK_ROOT  : $env:QAIRT_SDK_ROOT"
-Write-Host " ANDROID_NDK_ROOT: $($env:ANDROID_NDK_ROOT)"
-Write-Host " Converter venv  : $VenvDir"
-Write-Host " Converter bin   : $(if ($BinDir) { $BinDir } else { '<not found>' })"
-
-$allFound = $true
-foreach ($tool in $Converters) {
-    $cmd = Get-Command $tool -ErrorAction SilentlyContinue
-    if ($cmd) {
-        Write-Host (" {0,31} : {1}  OK" -f $tool, $cmd.Source)
     }
     else {
-        Write-Host (" {0,31} : NOT FOUND" -f $tool)
-        $allFound = $false
+        Write-Warning "[qairt-env] $($env:KAVI_ENVSETUP) not found - QNN_SDK_ROOT/SNPE_ROOT may be unset."
     }
-}
 
-if ($allFound) {
-    Write-Host "[qairt-env] All converters reachable."
+    Write-Host "[qairt-env] Ready: python from $env:VIRTUAL_ENV"
 }
-else {
-    Write-Warning "[qairt-env] Some converters were not found. Run the SDK's own environment setup (or a VS developer prompt) first, then re-run this script."
+finally {
+    Pop-Location
 }
