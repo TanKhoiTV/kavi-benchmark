@@ -115,6 +115,7 @@
 - **bench:** Make manifest candidate-agnostic + cheap FLEURS reads
 - **bench:** Cache candidate instances per cid in run_manifest
 - **repo:** Untrack the private android submodule
+- **env:** Resolve SDK/NDK paths in one platform-aware module([#136](https://github.com/TanKhoiTV/kavi-prototype/pull/136))
 
 ### Testing
 
