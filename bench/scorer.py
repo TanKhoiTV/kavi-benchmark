@@ -37,8 +37,14 @@ def score_item(
         try:
             import jiwer
 
-            metrics.wer = jiwer.wer(ref, hyp)
-            metrics.cer = jiwer.cer(ref, hyp)
+            # Normalize case: Zipformer outputs ALL CAPS, references are
+            # lowercase. jiwer is case-sensitive, so "THEY" != "they" gives
+            # misleading 100% WER. Lowercase both sides for fair scoring across
+            # all ASR candidates.
+            ref_norm = ref.lower()
+            hyp_norm = hyp.lower()
+            metrics.wer = jiwer.wer(ref_norm, hyp_norm)
+            metrics.cer = jiwer.cer(ref_norm, hyp_norm)
         except Exception as exc:  # noqa: BLE001
             metrics.notes.append(f"wer/cer failed: {exc}")
     elif item.stage == "MT":

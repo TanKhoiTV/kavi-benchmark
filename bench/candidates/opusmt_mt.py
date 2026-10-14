@@ -21,20 +21,23 @@ class OpusMTMTCandidate(Candidate):
     stage = "MT"
     id = "opus-mt-vi-en-ct2-cpu"
 
-    # CT2 default greedy decode loops on longer Vietnamese input (repetition
-    # cycles). A small beam + repetition control keeps translations coherent.
-    _DECODE_KWARGS = dict(
-        beam_size=4,
-        repetition_penalty=1.1,
-        no_repeat_ngram_size=3,
-        max_decoding_length=256,
-    )
-
     def __init__(
         self, model_path: str | None = None, config: dict | None = None
     ) -> None:
         import ctranslate2
         import sentencepiece as spm
+
+        cfg = config or {}
+        # CT2 default greedy decode loops on longer Vietnamese input (repetition
+        # cycles). A small beam + repetition control keeps translations coherent.
+        # Only beam_size changes from config — repetition_penalty and
+        # no_repeat_ngram_size stay fixed so a sweep varies exactly one variable.
+        self._decode_kwargs = dict(
+            beam_size=cfg.get("beam_size", 4),
+            repetition_penalty=1.1,
+            no_repeat_ngram_size=3,
+            max_decoding_length=256,
+        )
 
         model_dir = Path(model_path) if model_path else MT_MODEL_DIR
         if not model_dir.exists():
@@ -50,6 +53,6 @@ class OpusMTMTCandidate(Candidate):
     def _infer(self, item: EvalItem) -> tuple[str | None, str | None]:
         text = item.resolve_input()
         tokens = self.sp_src.encode(text, out_type=str)  # pyright: ignore[reportAttributeAccessIssue]
-        results = self.translator.translate_batch([tokens], **self._DECODE_KWARGS)
+        results = self.translator.translate_batch([tokens], **self._decode_kwargs)
         translation = self.sp_tgt.decode(results[0].hypotheses[0])  # pyright: ignore[reportAttributeAccessIssue]
         return translation, None

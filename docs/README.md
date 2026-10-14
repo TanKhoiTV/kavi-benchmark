@@ -35,6 +35,13 @@ tree.
   supersession graph and the open parameters. Immutable by convention; status
   changes are recorded in the ADR header.
 
+- `benchmark/` — published v1 results: `benchmark-results-fleurs-vivos.md` (tables
+  with per-candidate notes) and `report/report.pdf` (the Typst report, laid out
+  per `report-layout.md`). The `.md` tables and `report/charts/*.png` are
+  regenerated from `benchmark/raw-results/*.csv` by `bench/scripts/`; the raw CSVs
+  are generated from `run_results.json` by `bench/scripts/results_to_csv.py`, which
+  records the beam width the run results themselves do not carry.
+
 ## Cold reference — superseded / deprecated
 
 - `reference/` — everything no longer current, kept for history and for the

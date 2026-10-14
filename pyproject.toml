@@ -20,6 +20,13 @@ dependencies = [
   "noisereduce>=3.0",
   "numpy",
   "optimum[onnx]>=1.20.0",
+  # sherpa-onnx must stay < 1.13: 1.13.x is built against onnxruntime C API 27,
+  # incompatible with the onnxruntime 1.17.1 pinned by the qairt group for QAIRT
+  # SDK 2.31 compat. The core wheel ships onnxruntime.dll next to
+  # _sherpa_onnx.pyd, so the runtime is self-contained and does not collide with
+  # the environment's ORT.
+  "sherpa-onnx==1.12.40",
+  "sherpa-onnx-core==1.12.40",
   "datasets>=2.19.0",
   "onnx-graphsurgeon>=0.5.0",
   "unbabel-comet>=2.2.0",
@@ -33,9 +40,10 @@ extra-index-url = ["https://download.pytorch.org/whl/cpu"]
 [tool.ruff]
 target-version = "py312"
 line-length = 88
-# Archived legacy code (pre-restructure) and the local-only RTranslator
-# reference checkout are intentionally not linted.
-extend-exclude = ["archive", "RTranslator"]
+# Archived legacy code (pre-restructure), the local-only RTranslator
+# reference checkout, and .tmp (scratch artefacts and GitHub API dumps) are
+# intentionally not linted.
+extend-exclude = ["archive", "RTranslator", ".tmp"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "N", "UP", "B", "SIM"]
