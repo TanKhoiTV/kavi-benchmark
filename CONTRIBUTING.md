@@ -52,6 +52,13 @@ is deliberately not vendored here. There is no `android/` submodule in this repo
 and `android/` is gitignored, so a clone never populates it. For Android work,
 clone `kavi-android` separately (ask the owner for access).
 
+That boundary is enforced rather than just documented: `make check` runs
+[`scripts/leak_check.py`](scripts/leak_check.py), which fails when any tracked
+file is a private-track type (QNN `.so` libraries, Gradle/Android project files,
+app sources, model weights, keystores) or when the tree records a gitlink to the
+private repo. Untracked files are out of scope — the check asks what a clone
+receives. Run it alone with `make leak-check`.
+
 `adb` ships with the Android **platform-tools**, not with this repo. On Windows,
 install platform-tools (or Android Studio) and add `platform-tools\` to `PATH`.
 The pinned NDK is r26c (`26.1.10909125`).
@@ -161,6 +168,11 @@ Piper-CPU). On-device QNN candidates land in Phase 4 — see
   basic file hygiene (trailing whitespace, EOF newline, YAML, large files).
 - **Linting / formatting**: [`ruff`](https://docs.astral.sh/ruff/) — run
   `make check` (lint + format check) before pushing; `make fmt` to auto-fix.
+- **Public boundary**: [`scripts/leak_check.py`](scripts/leak_check.py) — run by
+  `make check` (and standalone as `make leak-check`). It asserts that no
+  private-track artifact type is tracked. The rules and their rationale live in
+  that file; `tests/test_leak_check.py` uses the private repo's real inventory as
+  its fixtures.
 - **Tests**: `pytest`, configured to collect `tests/` only (`testpaths` in
   `pyproject.toml`) so local vendored trees cannot break the run.
 - **Line endings**: governed by [`.gitattributes`](.gitattributes) — LF for
