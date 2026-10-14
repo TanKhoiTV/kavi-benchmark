@@ -35,6 +35,9 @@
 # Environment:
 #   QAIRT_SDK_ROOT   – path to QAIRT SDK 2.31.0.250130 (required)
 #   ANDROID_NDK_ROOT – path to Android NDK r26c (required for step 2)
+#   PYTHON           – interpreter used to resolve the converter bin dir
+#                      (default python3; the platform mapping lives in
+#                      scripts/env.py, so a bare interpreter is enough)
 #
 # SDK version requirement:
 #   Must be 2.31.0.250130 (= device qnn-2.31 / HTP v73).
@@ -338,10 +341,18 @@ mkdir -p "$OUTPUT_DIR"
 
 # Validate SDK environment
 [[ -z "${QAIRT_SDK_ROOT:-}" ]] && die "QAIRT_SDK_ROOT is not set. Point it to QAIRT SDK 2.31.0.250130"
-QAIRT_SDK_ROOT="$(cd "$QAIRT_SDK_ROOT" && pwd)"
-CONVERTER="$QAIRT_SDK_ROOT/bin/x86_64-linux-clang/qnn-onnx-converter"
-MODEL_LIB_GEN="$QAIRT_SDK_ROOT/bin/x86_64-linux-clang/qnn-model-lib-generator"
-CTX_BIN_GEN="$QAIRT_SDK_ROOT/bin/x86_64-linux-clang/qnn-context-binary-generator"
+QAIRT_SDK_ROOT="$(cd "$QAIRT_SDK_ROOT" 2>/dev/null && pwd)" ||
+	die "QAIRT_SDK_ROOT is not a directory: ${QAIRT_SDK_ROOT:-<unset>}"
+
+# The converter bin dir is platform-dependent (bin/x86_64-linux-clang on
+# Linux/WSL vs bin/x86_64-windows-msvc on Windows); scripts/env.py owns that
+# mapping. This shortcut needs no .kavi.yaml, so a bare python3 suffices.
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+CONVERTER_BIN="$("${PYTHON:-python3}" "$REPO_ROOT/scripts/env.py" --converter-bin-dir)" ||
+	die "cannot resolve the converter bin dir (see scripts/env.py --converter-bin-dir)"
+CONVERTER="$CONVERTER_BIN/qnn-onnx-converter"
+MODEL_LIB_GEN="$CONVERTER_BIN/qnn-model-lib-generator"
+CTX_BIN_GEN="$CONVERTER_BIN/qnn-context-binary-generator"
 
 for tool in "$CONVERTER" "$MODEL_LIB_GEN" "$CTX_BIN_GEN"; do
 	[[ -x "$tool" ]] || die "Tool not found or not executable: $tool (check QAIRT_SDK_ROOT)"
