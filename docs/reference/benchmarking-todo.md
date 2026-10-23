@@ -262,6 +262,19 @@ checklist.
       else VAD-only pipeline. **Result: ADOPT Wiener** (noisy WER 49.82% vs raw
       51.23%). See `docs/reference/denoising-gate-results.md`.
 
+### Phase 6b — VAD noise benchmark (ADR-022)
+
+- [x] Build the VAD manifest, reference speech bounds and energy VAD runner
+      (`make vad-bounds`, `make vad-manifest`, `make vad-run`, `make vad-smoke`).
+- [x] Run the full threshold x timeout sweep and verify it (`make vad-stage5`); table
+      and command record in `bench/results/vad/`. **Result: Case B** — no pair passes
+      in every cell (ADR-022 revision note).
+- [ ] Hand-labelled gold and collar (Stage 3B, `make vad-gold-audio`, `make vad-collar`)
+      — not performed; the collar is provisional.
+- [ ] On-device confirmation of the VAD outcome.
+- [ ] Follow-up issue: evaluate a model-based VAD for the reserved slot on the same
+      manifest and scorer.
+
 ### Phase 7 — v1 (quality depth)
 
 - [ ] Add COMET both directions (clean + cascaded ASR output).
@@ -279,6 +292,7 @@ checklist.
 | **InfoRe donation terms** | **RESOLVED — AVOID** (no published terms, 401-gated; taints downstream voices) · `25hours_single` also **AVOID** (license unknown, InfoRe-derived) — PR #35 | vietTTS VI voice dropped |
 | **VI→EN ST corpus** | **RESOLVED** — FLEURS ID-alignment (when parquets present) + bespoke factory/logistics gold set (offline fallback) | EN→VI eval coverage |
 | **RTranslator 3.0 imminent** | snapshot version/date when tested | fair comparison |
+| **VAD collar (Stage 3B)** | not performed — collar provisional | final missed-onset and clipped-speech figures (ADR-022) |
 
 ---
 

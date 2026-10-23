@@ -47,7 +47,7 @@ decisions.
 | [ADR-019](ADR-019-qnn-runtime-bundling.md) | QNN runtime bundling — jniLibs roster + version lock | Accepted *(ASR roster withdrawn by ADR-027)* |
 | [ADR-020](ADR-020-pipeline-concurrency.md) | Pipeline concurrency + per-encoder CPU fallback | Accepted |
 | [ADR-021](ADR-021-ort-cpu-decoder-session-options.md) | ONNX Runtime CPU decoder session options | Accepted |
-| [ADR-022](ADR-022-energy-vad.md) | Energy-based VAD with speech timeout | Accepted *(parameters open)* |
+| [ADR-022](ADR-022-energy-vad.md) | Energy-based VAD with speech timeout | Accepted *(no energy threshold fixed — model-based VAD follow-up)* |
 | [ADR-023](ADR-023-decoder-on-cpu.md) | Encoder on NPU, decoder on CPU | Accepted *(ASR half superseded by ADR-027)* |
 | [ADR-024](ADR-024-piper-tts-on-cpu.md) | Piper TTS stays on CPU | Accepted |
 | [ADR-025](ADR-025-app-layer-dynamic-padding.md) | App-layer dynamic padding/trimming for fixed shapes | Accepted |
@@ -112,11 +112,17 @@ here so nothing is silently forgotten. This register replaces the former
 | 1 | **Final MT model** | *no record yet* | An MT decision ADR is written (tracked as issue #110). Opus-MT is in use and pinned in `.kavi.yaml`, but the choice was never recorded — ADR-004 deferred it and ADR-008/ADR-009 closed only ASR and TTS. *Not measurement-gated: it needs a record, not a number.* |
 | 2 | **On-device denoiser model** (GTCRN vs Wiener) | [ADR-018](ADR-018-denoising-slot.md) | **Needs a number:** on-device WER for GTCRN vs Wiener on the same clips. The host-side Wiener gate is already recorded in [`docs/reference/denoising-gate-results.md`](../reference/denoising-gate-results.md). *(issue #111)* |
 | 3 | **Piper engine licence path** | [ADR-031](ADR-031-piper-engine-gpl-split.md) | **Downstream of the TTS decision — not currently blocking.** Piper is fallback-only in the working position, so this closes when the TTS choice is ratified: dropped from the shipped stack → closes outright; kept as fallback → the MIT-era `rhasspy/piper` snapshot must be pinned and subprocess isolation adopted. Urgent only if Supertonic misses the RTF ≤ 0.5 gate in `.kavi.yaml`. *(issue #112)* |
-| 4 | **VAD thresholds** | [ADR-022](ADR-022-energy-vad.md) | **Needs a number:** noise-condition benchmarking to fix the energy threshold and speech timeout (may trigger a model-based VAD). *(issue #113)* |
 | 5 | **ASR thread-tuning build** (B vs F) | [ADR-012](ADR-012-asr-thread-tuning.md) | **Needs a number:** on-device A/B on the Meizu 21 Note, 100 utterances per mode, logging RTF, thermal status and audio-overrun counters. Build B is already the working config, so this validates it and decides whether the Build F escalation is needed; the ADR's nine platform questions also need confirming on-device. *(issue #114)* |
 | 6 | **MT beam width** (greedy vs beam=4) | [ADR-020](ADR-020-pipeline-concurrency.md) | **Needs a number:** Phase-5 latency-vs-BLEU measurement. *(issue #115)* |
 | 7 | **w8a16 vs w8a8** for Opus-MT | [ADR-003](ADR-003-hexagon-runtime.md) | **Needs a number:** accuracy regression measurement. *(issue #116)* |
 
+> **Resolved — removed from the table.** **#4 VAD thresholds:** closed by the
+> host-side noise benchmark *(issue #113)*. No energy threshold and speech timeout
+> meets the criteria in the noisy conditions, so none is fixed and a model-based VAD
+> is the follow-up (not yet tracked). The collar was not measured and the evidence is
+> host-side only, so on-device confirmation is pending — see the revision note in
+> [ADR-022](ADR-022-energy-vad.md).
+>
 > **Resolved — removed from the table.** **#8 QAIRT Community Edition access:**
 > obtained. The SDK (`2.31.0.250130`) is installed and in use — see
 > [`docs/ndk-conversion-runbook.md`](../ndk-conversion-runbook.md) §2.2 and
