@@ -19,6 +19,8 @@ documents, which are not in this repository.
 | Smoke test, ADR defaults | `make vad-smoke` | `bench-results/vad-smoke/` |
 | Full 5 x 5 sweep | `make vad-sweep` | `bench-results/vad-sweep/sweep.{json,csv}` |
 | Sensitivity of the sweep to the collar (no labels) | `make vad-collar-sensitivity` | `bench-results/vad-collar-sensitivity/` |
+| Stage 5: full sweep with the Stage 3B collar, verified table and record | `make vad-stage5` | `bench/results/vad/sweep_table.csv`, `sweep_record.md` (committed); raw in `bench-results/vad-stage5/` |
+| Stage 6 helper: criteria applied to every pair and cell | `make vad-decision` | `bench-results/vad-decision/` |
 | Borderline follow-up, 40 items per cell | `make vad-manifest-40`, then `make vad-sweep MANIFEST=eval_data/vad_manifest_v2_n20.json` | |
 
 ## Benchmark construction

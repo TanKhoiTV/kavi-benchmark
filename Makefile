@@ -31,7 +31,7 @@
 #     from whatever is in eval_data/raw/ -- offline, with a built-in fallback
 #     (MT + TTS only) when the FLEURS parquets are absent.
 
-.PHONY: install setup setup-min check fmt test bench bench-data models data verify-assets vad-run vad-smoke vad-bounds vad-manifest vad-gold-audio vad-collar vad-audit vad-sweep vad-sweep-smoke vad-manifest-40 vad-collar-sensitivity
+.PHONY: install setup setup-min check fmt test bench bench-data models data verify-assets vad-run vad-smoke vad-bounds vad-manifest vad-gold-audio vad-collar vad-audit vad-sweep vad-sweep-smoke vad-manifest-40 vad-collar-sensitivity vad-stage5 vad-decision
 
 install: ## Install dependencies
 	uv sync
@@ -112,3 +112,9 @@ vad-manifest-40: ## Borderline follow-up: 40 items per cell -> eval_data/vad_man
 
 vad-collar-sensitivity: ## Score the 5x5 sweep at several collars (no hand labels needed)
 	uv run python -m bench.vad_collar_sensitivity --manifest $(MANIFEST) --out bench-results/vad-collar-sensitivity
+
+vad-stage5: ## Stage 5: full sweep with the Stage 3B collar -> bench/results/vad/ (table + record), raw in bench-results/
+	uv run python -m bench.vad_stage5
+
+vad-decision: ## Stage 6 helper: apply the criteria to every pair and cell (writes bench-results/ only)
+	uv run python -m bench.vad_decision
