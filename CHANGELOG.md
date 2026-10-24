@@ -82,6 +82,7 @@
 - **qnn:** Prepare the Opus-MT w8a16/w8a8 A/B (P0-P2)([#123](https://github.com/TanKhoiTV/kavi-benchmark/pull/123))
 - **ci:** Assert the public boundary in make check([#137](https://github.com/TanKhoiTV/kavi-benchmark/pull/137))
 - **bench:** Add M2M-100, Moonshine, Zipformer and Hy-MT candidates with v1 benchmark results([#124](https://github.com/TanKhoiTV/kavi-benchmark/pull/124))
+- **bench:** Port the VAD noise benchmark onto the post-move layout([#151](https://github.com/TanKhoiTV/kavi-benchmark/pull/151))
 
 ### Miscellaneous
 
