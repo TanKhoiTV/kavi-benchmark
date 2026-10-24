@@ -23,6 +23,17 @@ repos:
     hooks:
       - id: yamllint
 
+  # The docs follow one shape (see scripts/check_docs.py); `--fix` rewrites
+  # them, so a failing hook is fixed by running the command it prints.
+  - repo: local
+    hooks:
+      - id: doc-shape
+        name: doc shape (blank lines, unwrapped paragraphs, LF)
+        entry: uv run python -m scripts.check_docs
+        language: system
+        files: '\.md$'
+        exclude: '^archive/|/ADR-'
+
   # commitlint runs in a Node env provisioned by pre-commit itself,
   # so no package.json / node_modules is needed in this Python repo.
   - repo: local
