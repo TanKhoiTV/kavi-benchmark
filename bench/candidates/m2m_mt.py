@@ -47,6 +47,11 @@ class M2M100MTCandidate(Candidate):
         # Pre-resolve the English language token for use in every _infer call
         self._en_token = self.tokenizer.lang_code_to_token["en"]
 
+    def configure(self, config: dict) -> None:
+        """Re-point the beam width in place; weights stay loaded."""
+        if "beam_size" in config:
+            self._decode_kwargs["beam_size"] = int(config["beam_size"])
+
     def _infer(self, item: EvalItem) -> tuple[str | None, str | None]:
         text = item.resolve_input()
         tokens = self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(text))

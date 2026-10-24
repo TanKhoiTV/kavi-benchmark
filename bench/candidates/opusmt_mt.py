@@ -50,6 +50,11 @@ class OpusMTMTCandidate(Candidate):
         self.sp_tgt = spm.SentencePieceProcessor()
         self.sp_tgt.load(str(MT_SRC_DIR / "target.spm"))  # pyright: ignore[reportAttributeAccessIssue]
 
+    def configure(self, config: dict) -> None:
+        """Re-point the beam width in place; weights stay loaded."""
+        if "beam_size" in config:
+            self._decode_kwargs["beam_size"] = int(config["beam_size"])
+
     def _infer(self, item: EvalItem) -> tuple[str | None, str | None]:
         text = item.resolve_input()
         tokens = self.sp_src.encode(text, out_type=str)  # pyright: ignore[reportAttributeAccessIssue]

@@ -32,7 +32,7 @@
 #     from whatever is in eval_data/raw/ -- offline, with a built-in fallback
 #     (MT + TTS only) when the FLEURS parquets are absent.
 
-.PHONY: install setup setup-min check fmt test bench bench-data models data verify-assets leak-check vad-run vad-smoke vad-bounds vad-manifest vad-gold-audio vad-collar vad-audit vad-sweep vad-sweep-smoke vad-manifest-40 vad-collar-sensitivity vad-stage5 vad-decision
+.PHONY: install setup setup-min check fmt test bench bench-data beam-sweep beam-sweep-smoke models data verify-assets leak-check vad-run vad-smoke vad-bounds vad-manifest vad-gold-audio vad-collar vad-audit vad-sweep vad-sweep-smoke vad-manifest-40 vad-collar-sensitivity vad-stage5 vad-decision
 
 install: ## Install dependencies
 	uv sync
@@ -69,6 +69,19 @@ bench: ## Offline harness run (--smoke by default; writes bench-results/)
 
 bench-data: ## Build eval manifest from local data (offline; fallback if absent)
 	uv run python -m bench.data_prep --out eval_data/eval_manifest_v1.json
+
+beam-sweep: ## Formal MT beam sweep: repeats + warmup, both BLEU definitions
+	uv run python -m bench.beam_sweep \
+		--manifest eval_data/mt_vi_en_eval_manifest.json \
+		--out bench-results/beam-sweep-mt \
+		--beams 1 2 4 5 8 --repeats 3 --warmup 1 \
+		--report docs/reference/beam-sweep-mt.md
+
+beam-sweep-smoke: ## Wiring check: 5 items, 1 repeat (NOT the result)
+	uv run python -m bench.beam_sweep \
+		--manifest eval_data/mt_vi_en_eval_manifest.json \
+		--out bench-results/beam-sweep-smoke \
+		--beams 1 4 --repeats 1 --warmup 1 --limit 5
 
 models: ## Fetch pinned Opus-MT weights + tokenizers (NEEDS NETWORK, ~290 MB)
 	uv run python -m scripts.fetch_models --out models

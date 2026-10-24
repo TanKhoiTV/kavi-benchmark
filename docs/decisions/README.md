@@ -23,7 +23,7 @@ Decisions deliberately left unclosed. Rows **3 and 6** are owned publicly — th
 | # | Open parameter | Owned by | Closes when |
 | --- | --- | --- | --- |
 | 3 | **Piper engine licence path** | ADR-031 (`aivoice-2026/docs/decisions/`) | **Downstream of the TTS decision — not blocking.** Piper is fallback-only in the working position: dropped from the shipped stack → closes outright; kept as fallback → the MIT-era `rhasspy/piper` snapshot must be pinned and subprocess isolation adopted. |
-| 6 | **MT beam width** (greedy vs beam=4) | ADR-020 (private record), measured here | **Needs a number:** Phase-5 on-device latency-vs-BLEU measurement. The host-side quality half is already citable in [`../reference/beam-sweep-host-aggregate.md`](../reference/beam-sweep-host-aggregate.md) and in the published results. *(TanKhoiTV/kavi-benchmark#115)* |
+| 6 | **MT beam width** (greedy vs beam=4) | ADR-020 (private record), measured here | **Needs a number:** Phase-5 on-device latency-vs-BLEU measurement. The quality half is settled on the host — [`../reference/beam-sweep-mt.md`](../reference/beam-sweep-mt.md) finds beam=4 and beam=8 not separable on quality and beam=4 the cheaper, so only the device latency question is left. *(TanKhoiTV/kavi-benchmark#115, #88)* |
 
 Tracked privately (`kavi-android/docs/decisions/README.md`): **#2** on-device denoiser model (ADR-018) · **#5** ASR thread-tuning build (ADR-012) · **#7** Opus-MT w8a16 vs w8a8 (ADR-003).
 

@@ -59,5 +59,15 @@ class Candidate(ABC):
                 error=f"{type(exc).__name__}: {exc}",
             )
 
+    def configure(self, config: dict) -> None:
+        """Apply per-run config without reloading weights; ignore by default.
+
+        Decode knobs such as ``beam_size`` are run configuration, not model
+        identity, so a sweep reconfigures in place instead of paying a model load
+        per setting (TanKhoiTV/kavi-benchmark#90 problem 4). Candidates whose
+        knobs are fixed at construction simply keep the default no-op.
+        """
+        return None
+
     @abstractmethod
     def _infer(self, item: EvalItem) -> tuple[str | None, str | None]: ...
