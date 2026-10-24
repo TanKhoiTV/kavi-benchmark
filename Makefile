@@ -50,6 +50,7 @@ setup-min: ## Bootstrap without downloads (offline fallback eval set)
 check: ## Read-only lint/format check (CI-safe; verifies, no mutation)
 	uv run ruff check .
 	uv run ruff format --check .
+	uv run python -m scripts.check_docs
 	uv run pre-commit run yamllint --all-files
 	$(MAKE) leak-check
 
