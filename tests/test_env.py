@@ -391,6 +391,23 @@ class TestPinnedConfig:
             qairt_group = tomllib.load(fh)["dependency-groups"]["qairt"]
         assert set(qairt_group) == set(CONVERTER_REQUIREMENTS)
 
+    def test_published_sherpa_onnx_host_pin_matches_pyproject(self) -> None:
+        """``.kavi.yaml`` records the host pin for provenance; pyproject owns it.
+
+        The on-device pin is a different artifact and lives in
+        ``kavi-android/kavi-tuning.yaml`` — it is deliberately not compared here.
+        """
+        text = (REPO_ROOT / ".kavi.yaml").read_text(encoding="utf-8")
+        published = re.search(
+            r"^\s*sherpa_onnx_host:\s*\"?([^\"\s#]+)\"?", text, re.MULTILINE
+        )
+        assert published is not None, "runtime.sherpa_onnx_host is missing"
+        with open(REPO_ROOT / "pyproject.toml", "rb") as fh:
+            dependencies = tomllib.load(fh)["project"]["dependencies"]
+        pinned = [dep for dep in dependencies if dep.startswith("sherpa-onnx==")]
+        assert len(pinned) == 1, pinned
+        assert published.group(1) == pinned[0].split("==", 1)[1]
+
     def test_kavi_env_example_paths_match_the_pins(self) -> None:
         """The example file and .kavi.yaml must not drift to different versions."""
         text = (REPO_ROOT / ".kavi.env.example").read_text(encoding="utf-8")
