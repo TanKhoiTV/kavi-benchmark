@@ -220,7 +220,12 @@ def main() -> int:
             name, _, value = item.partition("=")
             if not name or not value:
                 raise SystemExit(f"--dim expects NAME=VALUE, got {item!r}")
-            overrides[name] = int(value)
+            try:
+                overrides[name] = int(value)
+            except ValueError:
+                raise SystemExit(
+                    f"--dim value must be an integer, got {item!r}"
+                ) from None
         input_specs = build_specs_from_onnx(onnx_path, overrides)
         print(f"input specs (auto, {len(input_specs)} tensors):")
         for spec_name, spec in input_specs.items():
