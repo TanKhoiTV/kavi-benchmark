@@ -406,7 +406,8 @@ uv run python -m bench.beam_sweep --report-only \
 ```
 """
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+    # Explicit LF: the Windows default would write CRLF and fail the shape gate.
+    path.write_text(text, encoding="utf-8", newline="\n")
     print(f"wrote {path}")
 
 

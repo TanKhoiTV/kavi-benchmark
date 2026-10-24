@@ -10,6 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..adapters import Candidate
+from ..decode import max_decoding_length
 from ..schema import EvalItem
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -31,7 +32,6 @@ class M2M100MTCandidate(Candidate):
             beam_size=cfg.get("beam_size", 4),
             repetition_penalty=1.1,
             no_repeat_ngram_size=3,
-            max_decoding_length=256,
         )
 
         model_dir = Path(model_path) if model_path else M2M_MODEL_DIR
@@ -60,7 +60,10 @@ class M2M100MTCandidate(Candidate):
         # regardless of beam_size.
         target_prefix = [[self._en_token]]
         results = self.translator.translate_batch(
-            [tokens], target_prefix=target_prefix, **self._decode_kwargs
+            [tokens],
+            target_prefix=target_prefix,
+            max_decoding_length=max_decoding_length(len(tokens)),
+            **self._decode_kwargs,
         )
         # Strip the leading language token from the output before decoding
         translation = self.tokenizer.decode(
