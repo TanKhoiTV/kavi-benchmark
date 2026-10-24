@@ -1,21 +1,31 @@
-# Kavi — single source of truth for pinned configuration values.
+# Kavi — published gates and claims.
 #
-# This file centralizes all version pins, hardware parameters, model configs,
-# and pipeline constants so that docs, scripts, and implementation reference
-# one location instead of scattering values across ADRs and plans.
+# This file is the single source of truth for what we claim publicly about the
+# on-device pipeline: the hard gates (RTF, turnaround), the memory budget, the
+# model and algorithm choices, and the measurements behind them.
 #
-# Per-machine paths (SDK, NDK) are set via environment variables —
-# see the *_env fields and the .kavi.env file. Everything else is a
-# project-wide invariant.
+# The mechanism — build pins, thread tuning, quant scheme, VAD timeout, jniLibs
+# keep list, fallbacks — lives in `kavi-android/kavi-tuning.yaml`. Private values
+# may not contradict the gates here: a gate-compliance assert checks the private
+# file against a SHA-pinned copy of this one, and lands at Build B, when code
+# first reads those values. Until then it reports every unmapped gate as
+# *unverifiable* rather than passing quietly.
+#
+# Per-machine paths (SDK, NDK) are set via environment variables — see the
+# *_env fields and the .kavi.env file.
 
 ---
 metadata:
-  description: "Kavi prototype — pinned configuration values"
+  description: "Kavi benchmark — published gates and claims"
   target_device: "Meizu 21 Note (Snapdragon 8 Gen 2 / SM8550 / Hexagon HTP v73)"
   target_android: 16 # API 36
-  last_updated: "2026-08-13" # PR #98 fix commits applied Aug 13
+  last_updated: "2026-10-24" # split: the mechanism moved to kavi-android/kavi-tuning.yaml
 
-# ── SDK & toolchain ──────────────────────────────────────────────────────────
+# ── Toolchain (temporary public home) ───────────────────────────────────────
+# These pins are mechanism, not claim, and move to `kavi-android` with the QAIRT
+# conversion toolchain. They stay here until that move lands because
+# `scripts/env.py` and its tests read them: splitting the file is not a reason to
+# break the public conversion path.
 
 sdk:
   qairt:
@@ -23,143 +33,38 @@ sdk:
     path_env: "QAIRT_SDK_ROOT" # set in .kavi.env
     version_lock_reason: "Must match device qnn-2.31 / HTP v73 runtime. Do NOT upgrade."
   ndk:
-    version: "26.1.10909125" # r26c
+    version: "26.1.10909125" # r26b — Google's label; QAIRT's sdk.yaml mislabels it r26c
     path_env: "ANDROID_NDK_ROOT" # set in .kavi.env
-  sherpa_onnx:
-    version: "1.13.4"
-    canonical_source: "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/"
-    note: "No official Maven Central artifact — AAR/jniLibs path is canonical."
 
-build:
-  agp: "8.10.0"
-  gradle: "8.11.1"
-  kotlin: "2.0.21"
-  cmake: "3.22.1"
-  compile_sdk: 36
-  target_sdk: 36
-  min_sdk: 24
-  abi: "arm64-v8a" # only
-  stl: "c++_shared" # must match sherpa-onnx prebuilt
-
-# ── ASR (Dual Zipformer, ADR-008) ──────────────────────────────────────────
+# ── ASR gates (Dual Zipformer, ADR-008) ────────────────────────────────────
 
 asr:
-  provider: "sherpa-onnx"
-  num_threads: 3 # STARTING VALUE — 3 per recognizer = 3+3 total (see tuning below)
-  decoding_method: "greedy_search" # v1 default; modified_beam_search deferred
-  provider_name: "cpu" # sherpa-onnx provider string
-  language_detection:
-    method: "argmax_mean_log_prob"
-    confidence_threshold: 0.6 # below → push-to-talk manual (ADR-008 fallback)
-  models:
-    vi:
-      name: "sherpa-onnx-zipformer-vi-30M-int8-2026-02-09"
-      size_mb: 32 # encoder 26 MB + decoder 4.9 MB + joiner 1.0 MB + tokens 23 KB
-      wer: "7.97%" # VLSP2025 — source: k2-fsa/sherpa-onnx VLSP2025 benchmark
-    en:
-      name: "csukuangfj/sherpa-onnx-zipformer-small-en-2023-06-26"
-      size_mb: 28 # ~28 MB per sherpa-onnx model card
   gates:
-    rtf: 0.05 # lenient vs ASR (0.05): TTS has Piper VITS fallback; Phase 1 targets interactivity over raw speed
+    rtf: 0.05 # hard gate
     rtf_desktop_benchmark: 0.011 # 1 thread, 3.74 s clip (sherpa-onnx bench)
-  # ── Thread tuning (Build B validation required) ──────────────────────────
-  # SD8G2 = 8 cores (1×X3 + 2×A715 + 2×A710 + 3×A510), no SMT.
-  # 4+4 = 8 threads leaves ZERO headroom for OS, audio capture, UI.
-  # Total threads during ASR = 2 coroutines + 4 + 4 = 10 competing for 8 cores.
-  #
-  # Options:
-  #   4+4 = 8 threads, 0 headroom — risk OS contention → RTF jitter
-  #   3+3 = 6 threads, 2 headroom — safer, ~25% slower per model
-  #   2+2 = 4 threads, 4 headroom — conservative, may miss RTF gate
-  #
-  # Recommendation: start with 3+3, measure RTF on-device, dial up if headroom exists.
-  #
-  # Thread priority: set THREAD_PRIORITY_URGENT_AUDIO on inference threads
-  # (Process.setThreadPriority in Kotlin) — no root needed, scheduler prefers
-  # idle performance cores. Avoid hard CPU affinity pinning (risky on big.LITTLE).
-  #
-  # PerformanceHintManager (API 31+) can request sustained performance mode
-  # to keep clocks high on performance cores during inference.
-  tuning:
-    build_b_validation: true
-    starting_config: "3+3" # 6 threads total, 2 headroom
-    thread_priority: "THREAD_PRIORITY_URGENT_AUDIO"
-    avoid_cpu_affinity_pin: true # risky on big.LITTLE — let scheduler balance
 
-# ── MT (Opus-MT, ADR-014) ────────────────────────────────────────
+# ── MT (Opus-MT, ADR-014 / ADR-032) ────────────────────────────────────────
 
 mt:
   model: "Helsinki-NLP/opus-mt-vi-en"
-  onnx:
-    # Source ONNX files (exist on disk — doubled dir is HuggingFace hub naming)
-    encoder: "models/qnn/opus-mt-vi-en/opus-mt-vi-en/encoder_model.onnx" # 186 MB fp32
-    decoder: "models/qnn/opus-mt-vi-en/opus-mt-vi-en/decoder_model.onnx" # 322 MB fp32
-    # Step-1 output (QAIRT converter): encoder/opus_mt_vi_en_encoder.bin (74 MB raw-weights tar)
-    # Step-3 output (context binary): NOT YET PRODUCED — M3 deliverable (NDK-gated track)
   decoding:
-    method: "greedy" # beam=1; beam=4 deferred to Phase 5 (ADR-007 §MT). Note: sherpa-onnx ASR uses "greedy_search" - field naming differs by provider API.
-    kv_cache_tokens: 256 # pre-allocated, never freed (ADR-013 residency)
-    kv_cache_mb: 70
-  qnn_encoder:
-    context_binary: "opus_mt_vi_en_encoder_v73.bin"
-    model_lib: "libopus_mt_vi_en_encoder.so"
-    quantization: "w8a16" # param_quantizer=tf, act_quantizer=tf
-    htp_arch: "v73"
-    conversion_script: "bench/qnn/convert_to_qnn.sh"
+    method: "greedy" # beam=1; beam=4 deferred to Phase 5 (ADR-007 §MT, #115)
 
 # ── TTS (Supertonic Phase 1 → VieNeu-TTS Phase 2, ADR-009) ──────────────────
 
 tts:
-  phase: 1
-  provider: "sherpa-onnx"
-  api_class: "OfflineTts"
-  num_threads: 4 # ASR+TTS never overlap in walkie-talkie pipeline; runs after ASR completes
-  provider_name: "cpu"
   model_name: "supertonic"
   license: "OpenRAIL-M (weights) + MIT (code)"
-  generation_config:
-    sid: 0 # 0–9 maps to M1–M5, F1–F5
-    speed: 1.0
-    num_steps: 8 # fast-sampling - verify audio quality on-device (Phase 1 target; Phase 2 will tune)
-    lang_values: ["vi", "en"] # switched per utterance via extra={"lang": ...}
-  sample_rate_hz: 44100
   gates:
     rtf: 0.5 # hard gate; else Piper VITS fallback
 
-# ── ONNX Runtime (ADR-010) ──────────────────────────────────────────────────
-
-onnxruntime:
-  optimization_level: "ORT_ENABLE_ALL" # ALL_OPT — safe because no custom ops
-  arena_allocator: true # CPUArenaAllocator(true)
-  memory_pattern: true # MemoryPatternOptimization(true)
-  single_copy: true # reuse sherpa's bundled libonnxruntime.so
-  note: "Kavi avoids RTranslator's NO_OPT limitation — no custom ONNX operators in pipeline."
-
-# ── QNN / jniLibs (ADR-019) ─────────────────────────────────────
-
-qnn:
-  jni_libs_trimmed: 8 # 39 → 8 per ADR-019
-  keep_libs:
-    - "libQnnHtp.so"
-    - "libQnnHtpV73Stub.so"
-    - "libQnnHtpV73CalculatorStub.so"
-    - "libQnnHtpPrepare.so"
-    - "libQnnSystem.so"
-    - "libQnnCpu.so"
-    - "libQnnGpu.so" # GPU fallback backend — future-proofing per ADR-019
-    - "libqnn_loader_jni.so"
-  version_lock: "QAIRT 2.31.0.250130 = device qnn-2.31 / HTP v73"
-
-# ── Denoiser (ADR-018, Phase-6 gate) ─────────────────────────────
+# ── Denoiser (ADR-018, Phase-6 gate) — host-side measurement ────────────────
 
 denoiser:
   method: "wiener" # host-side benchmarking reference (noisereduce, prop_decrease=0.5)
   prop_decrease: 0.5
-  toggleable: true # per-utterance
-  wer_noisy: "49.82%" # smoke test: weighted avg, 2 utts × 5 conditions, SNR0+5 impulsive+steady; source: docs/denoising-gate-results.md
-  wer_raw: "51.23%" # same methodology; source: docs/denoising-gate-results.md
-  on_device_default: "GTCRN" # ADR-018 — ~50 MB ONNX runtime (ADR-016); model file is ~523 KB
-  note: "Wiener is host-side benchmarking reference. On-device denoiser is GTCRN (ADR-018); final pick gated on Phase-6 benchmarks (Risk R1)."
+  wer_noisy: "49.82%" # smoke test: weighted avg, 2 utts × 5 conditions, SNR0+5 impulsive+steady; source: docs/reference/denoising-gate-results.md
+  wer_raw: "51.23%" # same methodology; source: docs/reference/denoising-gate-results.md
 
 # ── Memory budget (ADR-007/008 ≈ 1.16 GB) ───────────────────────────────────
 
@@ -180,36 +85,12 @@ memory:
 
 timing:
   turnaround_gate_sec: 2.0 # EOS→SA hard gate
-  audio_record_hz: 16000 # mono PCM float
-  audio_playback_hz: 44100 # from Supertonic
-  vad_speech_timeout_ms: 500
-  cold_start_load_sec_min: 2 # mitigated by splash/progress bar
-  cold_start_load_sec_max: 3
 
-# ── Fallback chain ──────────────────────────────────────────────────────────
+# ── Runtime pins that are claims in their own right ─────────────────────────
 
-fallbacks:
-  encoder: "QNN → ORT CPU (automatic, logged)"
-  tts: "Supertonic → Piper VITS (MIT-era pinned snapshot)"
-  denoiser: "toggle off / pass-through if load fails"
-  language: "confidence < 0.6 → PTT manual direction"
-  service: "model load failure → notification + retry, no crash"
-
-# ── Path conventions (ADR-011) ──────────────────────────────────────────────
-
-paths:
-  host_models: "models/qnn/*" # gitignored — regenerable only
-  on_device_assets: "android/app/src/main/assets/"
-  on_device_jnilibs: "android/app/src/main/jniLibs/arm64-v8a/"
-  sha256_manifest: "android/app/src/main/assets/SHA256SUMS"
-  note: "Never vendor from models/qnn/*. All on-device artifacts committed inside kavi-android with SHA-256 manifest."
-
-# ── Phase sequencing (android-kotlin-cpp-implementation-plan, PR #97 pending review) ──────
-
-build_sequence:
-  A_plumbing: "Vendor sherpa-onnx, trim jniLibs 39→8, multi-target CMake, ModelRegistry + SHA256SUMS"
-  B_asr: "DualZipformerRecognizer, LanguageSelector, unit + instrumented smoke"
-  C_service: "TranslationService, Recorder/Vad, AudioSink, SupertonicTts, MtDecoder (ORT greedy), SpeechPipeline walkie-talkie"
-  D_qnn_encoder: "qnn_loader_jni rewrite, QnnTensorFactory, direct-Buffer zero-copy, version-lock assert"
-  E_tts_ble: "Supertonic tuning, Piper fallback, PeerLink BLE 5.2"
-  F_benchmark: "BenchmarkRunner, hard gates (RTF, ALL_OPT vs NO_OPT), WER/BLEU off-device scoring"
+runtime:
+  # Owned by pyproject.toml: 1.13.x is built against ORT C API 27, which the
+  # QAIRT-compatible onnxruntime 1.17.1 cannot satisfy. Recorded here for the
+  # report's provenance; tests/test_env.py asserts the two never drift. The
+  # on-device AAR pin is a different artifact and lives in kavi-tuning.yaml.
+  sherpa_onnx_host: "1.12.40"
