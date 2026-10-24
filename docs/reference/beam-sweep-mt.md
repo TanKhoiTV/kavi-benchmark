@@ -4,17 +4,19 @@
 
 | beam | n | sentence-BLEU | corpus BLEU | chrF | p50 s | p95 s | median ratio | words/s | KV MB (derived) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 30 | 7.25 | 4.5 | 35.77 | 0.312 | 1.459 | 1.0 | 150.26 | 6.0 |
-| 2 | 30 | 9.91 | 6.63 | 41.4 | 0.211 | 0.945 | 0.68 | 156.46 | 12.0 |
-| 4 | 30 | 11.54 | 8.79 | 45.63 | 0.344 | 4.168 | 1.1 | 51.21 | 24.0 |
-| 5 | 30 | 10.34 | 6.99 | 42.83 | 0.388 | 3.006 | 1.24 | 51.71 | 30.0 |
-| 8 | 30 | 11.34 | 8.8 | 46.28 | 0.39 | 4.167 | 1.25 | 31.09 | 48.0 |
+| 1 | 30 | 10.37 | 10.08 | 47.56 | 0.188 | 0.327 | 1.0 | 202.45 | 6.0 |
+| 2 | 30 | 11.16 | 10.72 | 48.71 | 0.449 | 0.667 | 2.39 | 89.59 | 12.0 |
+| 4 | 30 | 12.45 | 11.91 | 50.16 | 0.549 | 1.007 | 2.92 | 65.13 | 24.0 |
+| 5 | 30 | 11.77 | 11.06 | 49.19 | 0.36 | 0.652 | 1.92 | 93.28 | 30.0 |
+| 8 | 30 | 11.74 | 11.17 | 49.39 | 0.426 | 0.873 | 2.26 | 76.38 | 48.0 |
 
 Corpus BLEU signature: `nrefs:1|case:mixed|eff:no|tok:13a|smooth:exp|version:2.6.0`.
 
+Decode guard: **on**. `max_decoding_length` is sized from the utterance (`bench/decode.py`: 1.5 x source pieces, clamped to [48, 256]) instead of a flat 256. Without it, CTranslate2's greedy decode loops on long Vietnamese input and the looped items dominate both the latency tail and the BLEU mean.
+
 ## Verdict
 
-The definitions disagree: sentence-BLEU peaks at beam=4 (11.54), corpus BLEU at beam=8 (8.8). Report both or report neither. beam=8 and beam=4 are **not separable on quality** (0.01 corpus BLEU, inside the 0.15 this sample can resolve); beam=4 is the cheaper of the two.
+Both definitions peak at **beam=4** (12.45 sentence / 11.91 corpus). Agreement on the argmax is the useful part: the archived sweep's two columns disagreed here, which is why its beam=4 verdict could not be separated from a definition choice. beam=4 leads beam=8 by 0.74 corpus BLEU, outside the 0.15 this sample can resolve.
 
 Repeats are what make the latency column citable: every figure above is a **median of 3 timed passes per item**, with the first 1 pass(es) discarded so framework warmup is not inside the sample.
 
@@ -28,7 +30,7 @@ Repeats are what make the latency column citable: every figure above is a **medi
 
 ## Monotonicity
 
-57 of 120 adjacent-beam transitions have the wider beam finish faster. First instance: `vi-en-mt-1660: beam=1 1.371s > beam=2 0.913s`.
+36 of 120 adjacent-beam transitions have the wider beam finish faster. First instance: `vi-en-mt-1670: beam=1 0.485s > beam=2 0.453s`.
 
 ## What this still cannot claim
 
