@@ -1,8 +1,10 @@
 # Beam-sweep host aggregate — Opus-MT vi→en
 
-**Date:** 2026-09-28 **Dataset:** 30 MT items with `reference_text`, from `eval_manifest_v1.json` **Candidate:** `opus-mt-vi-en-ct2-cpu` — Helsinki-NLP Opus-MT vi→en via CTranslate2 int8, CPU **Status:** supporting evidence for open parameter #6 in [`docs/decisions/README.md`](../decisions/README.md). **Not a decision.** See [ADR-020](../decisions/ADR-020-pipeline-concurrency.md) for the deferral.
+**Date:** 2026-09-28 **Dataset:** 30 MT items with `reference_text`, from `eval_manifest_v1.json` **Candidate:** `opus-mt-vi-en-ct2-cpu` — Helsinki-NLP Opus-MT vi→en via CTranslate2 int8, CPU **Status:** supporting evidence for open parameter #6 in [`docs/decisions/README.md`](../decisions/README.md). **Not a decision.** See ADR-020 — *pipeline concurrency* (`kavi-android`) for the deferral.
 
 This file exists because the numbers quoted in ADR-020 need a source a reader can check. The raw per-item output is not one: it lives under `bench-results/`, which is gitignored (`.gitignore:44`) and therefore tracked on no branch. This is the reduced table that *is* tracked, plus the method that produces it.
+
+> **Superseded for the quality question.** A formal rerun — [`beam-sweep-mt.md`](beam-sweep-mt.md) — replaces this table as evidence for the beam-width parameter: it measures three repeats per item after a discarded warmup pass, reports both BLEU definitions with a signature, records the beam width per row, and derives the KV-cache column instead of subtracting process RSS. The table below is kept as history, and because its latency column is the record of *why* singleshot timing was abandoned.
 
 ## Reproducing
 
@@ -61,7 +63,7 @@ In all three, beam=4 is faster than **beam=1**. What happens next is not uniform
 
 ## Related
 
-- [ADR-020](../decisions/ADR-020-pipeline-concurrency.md) — the deferral this aggregate supports; open parameter #6
+- ADR-020 — *pipeline concurrency* (`kavi-android`) — the deferral this aggregate supports; open parameter #6
 - [`scripts/summarise_beam_sweep.py`](../../scripts/summarise_beam_sweep.py) — regenerates this table
 - `feat/beam-sweep-mt` — the branch holding the harness and the per-model reports. Note the Opus-MT report there is dated 2025-07-26; the branch's own history puts it at 2026-07-27, and its retrospective table carries the same year error.
 - The Opus-MT report there also averages per-sentence BLEU, which is what section *The two BLEU columns disagree* is about. Its `beam=4` verdict holds under corpus BLEU, but on a 0.16 margin over beam=8 (0.50 over beam=5) across 30 items.
