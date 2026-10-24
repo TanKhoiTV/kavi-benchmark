@@ -1,4 +1,4 @@
-# Pre-commit hooks for kavi-prototype
+# Pre-commit hooks for kavi-benchmark
 # commitlint enforces Conventional Commits on every commit message.
 # Activate with: uv run pre-commit install
 # (writes .git/hooks/commit-msg so the hook runs on `git commit`)
@@ -22,6 +22,17 @@ repos:
     rev: v1.38.0
     hooks:
       - id: yamllint
+
+  # The docs follow one shape (see scripts/check_docs.py); `--fix` rewrites
+  # them, so a failing hook is fixed by running the command it prints.
+  - repo: local
+    hooks:
+      - id: doc-shape
+        name: doc shape (blank lines, unwrapped paragraphs, LF)
+        entry: uv run python -m scripts.check_docs
+        language: system
+        files: '\.md$'
+        exclude: '^archive/|/ADR-'
 
   # commitlint runs in a Node env provisioned by pre-commit itself,
   # so no package.json / node_modules is needed in this Python repo.

@@ -1,8 +1,6 @@
 # Phase 6 — Denoising Gate Results
 
-> **Date:** 2026-07-20
-> **ASR candidate:** faster-whisper Small int8 (CPU)
-> **Eval set:** Smoke test (2 utterances × 5 conditions)
+> **Date:** 2026-07-20 **ASR candidate:** faster-whisper Small int8 (CPU) **Eval set:** Smoke test (2 utterances × 5 conditions)
 
 ## Binary Gate Decision
 

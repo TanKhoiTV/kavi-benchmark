@@ -23,7 +23,7 @@ body = """
         - {% if commit.scope %}**{{ commit.scope }}:** {% endif %}\
             {#- Squash merges leave "(#N)" in the subject, and the link below appends\n                the same PR again. Strip the subject's copy when it matches the\n                resolved PR number so each entry carries exactly one reference. #}\
             {% if commit.remote.pr_number %}{{ commit.message | replace(from="(#" ~ commit.remote.pr_number ~ ")", to="") | trim | upper_first }}{% else %}{{ commit.message | upper_first }}{% endif %}\
-            {% if commit.remote.pr_number %}([#{{ commit.remote.pr_number }}](https://github.com/TanKhoiTV/kavi-prototype/pull/{{ commit.remote.pr_number }})){% endif %}\
+            {% if commit.remote.pr_number %}([#{{ commit.remote.pr_number }}](https://github.com/TanKhoiTV/kavi-benchmark/pull/{{ commit.remote.pr_number }})){% endif %}\
     {% endfor %}
 {% endfor %}
 """
@@ -32,9 +32,9 @@ footer = """
     {% if release.previous -%}
         {% if release.version -%}
             [{{ release.version | trim_start_matches(pat="v") }}]: \
-                https://github.com/TanKhoiTV/kavi-prototype/compare/{{ release.previous.version }}...{{ release.version }}
+                https://github.com/TanKhoiTV/kavi-benchmark/compare/{{ release.previous.version }}...{{ release.version }}
         {% else -%}
-            [unreleased]: https://github.com/TanKhoiTV/kavi-prototype/compare/{{ release.previous.version }}...HEAD
+            [unreleased]: https://github.com/TanKhoiTV/kavi-benchmark/compare/{{ release.previous.version }}...HEAD
         {% endif -%}
     {% endif -%}
 {% endfor %}
@@ -66,4 +66,4 @@ sort_commits = "oldest"
 
 [github]
 owner = "TanKhoiTV"
-repo = "kavi-prototype"
+repo = "kavi-benchmark"

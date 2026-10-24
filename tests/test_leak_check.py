@@ -166,7 +166,7 @@ class TestGitlinks:
             "# a comment\n"
             '[submodule "prototype"]\n'
             "\tpath = prototype\n"
-            "\turl = git@github.com:TanKhoiTV/kavi-prototype.git\n"
+            "\turl = git@github.com:TanKhoiTV/kavi-benchmark.git\n"
         )
         assert submodule_entries(text) == [('[submodule "prototype"]', "prototype")]
 
@@ -185,7 +185,10 @@ class TestThisRepository:
     def test_repository_is_within_the_boundary(self) -> None:
         paths, found = check(REPO_ROOT)
         assert found == [], f"private-track files are tracked: {found}"
-        assert len(paths) > 100, "expected the real tracked file list"
+        # A sanity floor, not a target: without it a broken `git ls-files` would
+        # make this check pass vacuously. The 2026-10 re-organisation moved the
+        # on-device track out, so the tree is ~96 tracked paths, not ~180.
+        assert len(paths) > 50, "expected the real tracked file list"
 
     def test_the_scanned_list_is_the_git_index(self) -> None:
         """Untracked files are out of scope: the check asks what a clone receives."""

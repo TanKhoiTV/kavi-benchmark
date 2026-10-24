@@ -33,7 +33,6 @@ def _curl(url: str, out: Path, max_retries: int) -> bool:
                 "20",
                 "--retry-delay",
                 "2",
-                "--retry-all-errors",
                 "--max-time",
                 "600",
                 "-C",

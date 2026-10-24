@@ -1,8 +1,6 @@
 # Pull Request
 
-> **The PR title must follow [Conventional Commits](https://www.conventionalcommits.org/)**,
-> e.g. `feat(asr): add VAD pre-filter` or `fix(tts): correct onnx voice path`.
-> This is enforced locally by the `commitlint` pre-commit hook and in CI.
+> **The PR title must follow [Conventional Commits](https://www.conventionalcommits.org/)**, e.g. `feat(asr): add VAD pre-filter` or `fix(tts): correct onnx voice path`. This is enforced locally by the `commitlint` pre-commit hook and in CI.
 
 ## 🚀 Description
 
