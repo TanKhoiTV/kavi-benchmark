@@ -61,7 +61,7 @@ receives. Run it alone with `make leak-check`.
 
 `adb` ships with the Android **platform-tools**, not with this repo. On Windows,
 install platform-tools (or Android Studio) and add `platform-tools\` to `PATH`.
-The pinned NDK is r26c (`26.1.10909125`).
+The pinned NDK is r26b (`26.1.10909125`).
 
 ## Setup
 
