@@ -114,6 +114,7 @@
 - Add CODEOWNERS so PRs auto-request a reviewer([#130](https://github.com/TanKhoiTV/kavi-benchmark/pull/130))
 - **scripts:** Sync the boundary check with the umbrella copy([#138](https://github.com/TanKhoiTV/kavi-benchmark/pull/138))
 - Name this repo kavi-benchmark in its own docs and config([#148](https://github.com/TanKhoiTV/kavi-benchmark/pull/148))
+- **codeowners:** Describe the repo under its current name([#150](https://github.com/TanKhoiTV/kavi-benchmark/pull/150))
 
 ### Refactoring
 
