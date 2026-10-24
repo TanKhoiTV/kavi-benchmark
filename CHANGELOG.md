@@ -68,6 +68,7 @@
 - **agents:** Describe the benchmark track, not the pre-move layout([#149](https://github.com/TanKhoiTV/kavi-benchmark/pull/149))
 - Give the tracked docs one shape and guard it([#153](https://github.com/TanKhoiTV/kavi-benchmark/pull/153))
 - **adr:** Pin Opus-MT vi<->en as the translation baseline([#155](https://github.com/TanKhoiTV/kavi-benchmark/pull/155))
+- **bench:** Rerun the beam sweep on the guarded decode path([#162](https://github.com/TanKhoiTV/kavi-benchmark/pull/162))
 
 ### Features
 
