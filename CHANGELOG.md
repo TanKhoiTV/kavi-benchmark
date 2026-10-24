@@ -120,6 +120,7 @@
 - **repo:** Untrack the private android submodule
 - **env:** Resolve SDK/NDK paths in one platform-aware module([#136](https://github.com/TanKhoiTV/kavi-prototype/pull/136))
 - **config:** Split .kavi.yaml into published gates and private tuning([#146](https://github.com/TanKhoiTV/kavi-prototype/pull/146))
+- Trim the benchmark repo to the host-side track([#147](https://github.com/TanKhoiTV/kavi-prototype/pull/147))
 
 ### Testing
 
