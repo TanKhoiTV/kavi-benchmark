@@ -59,9 +59,6 @@ app sources, model weights, keystores) or when the tree records a gitlink to the
 private repo. Untracked files are out of scope — the check asks what a clone
 receives. Run it alone with `make leak-check`.
 
-`adb` ships with the Android **platform-tools**, not with this repo. On Windows,
-install platform-tools (or Android Studio) and add `platform-tools\` to `PATH`.
-The pinned NDK is r26b (`26.1.10909125`).
 
 ## Setup
 
@@ -150,13 +147,14 @@ stabilizes.
   If it is not installed, run `uv python install 3.12` first.
 - **Network for the first `uv sync`** — packages come from PyPI, and
   `torch`/`torchaudio` fetch **CPU-only** wheels from the PyTorch CPU index
-  (`https://download.pytorch.org/whl/cpu`, set in `pyproject.toml` under
-  `[tool.uv] extra-index-url`). Allow outbound HTTPS to both hosts.
+  (`https://download.pytorch.org/whl/cpu`, declared in `pyproject.toml` as an
+  `explicit` index used only by the torch packages). Allow outbound HTTPS to
+  both hosts.
 - **Disk** — budget ~2 GB for `.venv`, `models/`, and the FLEURS parquets.
 
-The v0 harness runs **CPU-only** today (faster-whisper / CTranslate2 Opus-MT /
-Piper-CPU). On-device QNN candidates land in Phase 4 — see
-`docs/reference/phase-4-qnn-plan.md`.
+The harness runs **CPU-only** (faster-whisper / CTranslate2 Opus-MT /
+Piper-CPU). On-device QNN work — candidates, conversion, context binaries — is
+out of scope here and lives in the private `kavi-android` repo.
 
 ## Tooling & standards
 
@@ -191,75 +189,28 @@ Piper-CPU). On-device QNN candidates land in Phase 4 — see
 
 ## Development environments (OS notes)
 
-The core toolchain is **OS-agnostic**: Python + `uv`, `ruff`, and Gradle all run
-identically on Windows, Linux, and macOS. The OS-specific pieces are the
-**QAIRT conversion toolchain** (Phase 4) and, in the Android repo, the
-**Android SDK/NDK install**.
-
-**Per-machine paths have one owner.** `scripts/env.py` resolves the SDK root, the
-NDK root, the converter bin dir, the host library dir, the SDK envsetup flavour
-and the Python 3.10 converter venv for the current platform. The shell entry
-points (`scripts/qairt-env.sh`, `scripts/qairt-env.ps1`) and the conversion
-pipeline (`bench/qnn/convert_to_qnn.sh`) consume that resolver instead of
-deriving paths themselves, so the four genuinely platform-dependent facts live
-in exactly one place:
-
-| fact | POSIX (WSL/Linux) | Windows (Git Bash/PowerShell) |
-| --- | --- | --- |
-| venv layout | `.venv-qairt/bin` | `.venv-qairt/Scripts` |
-| converter bin dir | `bin/x86_64-linux-clang` | `bin/x86_64-windows-msvc` |
-| host library dir | `lib/x86_64-linux-clang` (`LD_LIBRARY_PATH`) | `lib/x86_64-windows-msvc` (`PATH`) |
-| SDK envsetup | `bin/envsetup.sh` | `bin/envsetup.ps1` |
-
-`uv run python -m scripts.env --check` reports what it resolved and where each
-answer came from (argument, environment variable or probe); `--format
-bash|powershell|json` emits the environment for a shell or a tool.
-
-**You do not need a hybrid Windows + WSL2 machine — a single OS is enough:**
-
-- **Windows-only** — install Python + `uv`, and (for Phase 4) the Windows QAIRT
-  SDK; its converters run natively as `.exe`. No WSL required for the Python
-  harness.
-- **Linux-only** — same, with the Linux QAIRT SDK (`.qik` installed via
-  `qpm-cli`); conversion runs natively.
-- **macOS-only** — Python + `uv` work fine. The QAIRT *conversion* toolchain is
-  Linux/Windows-only, so run conversion in a VM/container or CI and build the
-  app from the committed context binaries.
+The harness is **OS-agnostic**: Python + `uv`, `ruff` and `pytest` behave the same
+on Windows, Linux and macOS, and the benchmark runs fully offline once the pinned
+assets are fetched. There is no host-specific configuration left in this repo —
+the QAIRT conversion toolchain, and with it the SDK/NDK path resolution, moved to
+the private `kavi-android` repo in the 2026-10 re-organisation.
 
 ### Windows specifics
 
-- **`make` is not installed by default.** Install it (`winget install
-  ezwinports.make`) or use the Git-for-Windows shell. If you would rather skip
-  `make`, every target is a plain `uv run …` command — copy it from the
-  `Makefile`.
-- **QAIRT conversion on Windows**: dot-source `scripts\qairt-env.ps1`. It creates
-  the Python 3.10 `.venv-qairt`, imports the environment resolved by
-  `scripts/env.py`, and verifies the converters. The Windows SDK ships the same
-  tools with mixed suffixes (`.exe`, `.bat`, and extension-less Python scripts),
-  which the resolver's lookup tolerates. `scripts/qairt-env.sh` is the
-  Linux/WSL counterpart and deliberately *refuses* to run under Git Bash, where
-  `uv` would build a `Scripts/` venv around those same Windows binaries.
-- **Environment variables**: `.kavi.env` (bash `export` syntax, for Git
-  Bash/WSL) is optional and declares only the two per-machine *roots*. Anything
-  derived from them is computed by `scripts/env.py`, and a variable that is set
-  but points nowhere — a stale value inherited from Windows — is ignored with a
-  warning instead of being used. In PowerShell, dot-source
-  `scripts\qairt-env.ps1` or set the variables directly.
+**`make` is not installed by default.** Install it (`winget install
+ezwinports.make`) or use the Git-for-Windows shell. If you would rather skip
+`make`, every target is a plain `uv run …` command — copy it from the
+[`Makefile`](Makefile).
 
-**Our setup (reference, not a requirement):** everything runs in **WSL2** on
-this box — the Android app is built there against a Linux SDK/NDK (app repo:
-`scripts/setup-android-sdk.sh`) and QAIRT conversion uses the **Linux** QAIRT
-SDK, whose `x86_64-linux-clang` converters and host libs run natively. The
-earlier split (app on Windows, conversion in WSL2) applied while only the
-Windows QAIRT SDK was installed; the Linux SDK is now the one in use, so no OS
-hopping is required.
+### On-device work
 
-**QAIRT conversion toolchain (Phase 4):** host build-time only, needed solely
-when producing HTP v73 context binaries. See `docs/reference/phase-4-qnn-plan.md`
-§1 for the exact env contract (`QAIRT_SDK_ROOT`, `ANDROID_NDK_ROOT`,
-`scripts/env.py`, `qairt-env.sh`/`qairt-env.ps1`, `.venv-qairt`).
+Building the app, running the QAIRT converters and producing HTP v73 context
+binaries is out of scope for this repository. Those live in the private
+`kavi-android` repo: its `CONTRIBUTING.md` covers the Android SDK/NDK install and
+`scripts/setup-android-sdk.sh`, and `docs/ndk-conversion-runbook.md` there covers
+conversion.
 
-## Note on `archive/`
+## Note on the previous implementation
 
-The previous implementation lives under `archive/`. It is reference material,
-not active code — do not edit files there; re-implement in the new structure.
+It lives in `aivoice-2026/archive/` — reference material, not active code. Do not
+edit files there; re-implement in the current structure.

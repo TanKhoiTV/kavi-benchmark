@@ -402,7 +402,7 @@ All decisions are resolved; the implementation plan (§5) is final and proceeds 
       declaration was made on the pre-rewrite branch and lost when the history
       was rewritten; it was re-added on `feat/benchmark` in PR #124. It is
       pinned `==1.12.40` because 1.13.x needs onnxruntime C API 27, which the
-      `qairt` group's 1.17.1 pin cannot load.)*
+      private `kavi-android` QAIRT environment's 1.17.1 pin cannot load.)*
 - [x] Zipformer spot-run WER sane (case-normalized); M2M spot-run BLEU in the same
       ballpark as archived `bench-results/fluers/` numbers.
 - [x] CHANGELOG + `docs/benchmarking-todo.md` updated.
@@ -412,7 +412,7 @@ All decisions are resolved; the implementation plan (§5) is final and proceeds 
 ## 10. Implementation notes (deviations found while executing)
 
 1. **sherpa-onnx vs onnxruntime conflict.** `sherpa-onnx>=1.13.4` is built against
-   onnxruntime C API 27 but the env has ORT 1.17.1 (pinned by the `qairt` group
+   onnxruntime C API 27 but the env has ORT 1.17.1 (pinned by the QAIRT group in `kavi-android`
    for QAIRT SDK 2.31 compat). Fixed by pinning `sherpa-onnx==1.12.40` **and**
    declaring `sherpa-onnx-core==1.12.40` explicitly — the core wheel ships
    `onnxruntime.dll` next to `_sherpa_onnx.pyd`, making the runtime
