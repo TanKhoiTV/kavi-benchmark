@@ -50,8 +50,11 @@ jobs:
       # in the repo.
       #
       # One-time setup — repository Settings → Secrets and variables → Actions:
-      #   * Variable  CHANGELOG_SYNC_APP_ID          = the App's numeric App ID
+      #   * Variable  CHANGELOG_SYNC_APP_CLIENT_ID   = the App's Client ID
       #   * Secret    CHANGELOG_SYNC_APP_PRIVATE_KEY = the App's .pem contents
+      #
+      # The Client ID is public (it appears in OAuth URLs) and is not the
+      # numeric App ID. `app-id` still works but is deprecated in v3.
       # The App itself needs: Contents = read and write, no webhook, installed
       # on this repository, and added to the `main` ruleset bypass list as an
       # Integration with bypass mode "always".
@@ -61,15 +64,15 @@ jobs:
       - name: Check changelog sync is configured
         id: config
         env:
-          APP_ID: ${{ vars.CHANGELOG_SYNC_APP_ID }}
+          CLIENT_ID: ${{ vars.CHANGELOG_SYNC_APP_CLIENT_ID }}
           APP_KEY: ${{ secrets.CHANGELOG_SYNC_APP_PRIVATE_KEY }}
         run: |
-          if [[ -n "$APP_ID" && -n "$APP_KEY" ]]; then
+          if [[ -n "$CLIENT_ID" && -n "$APP_KEY" ]]; then
             echo "configured=true" >> "$GITHUB_OUTPUT"
           else
             echo "configured=false" >> "$GITHUB_OUTPUT"
             echo "::notice title=changelog::Changelog sync is not configured —"\
-              "set the CHANGELOG_SYNC_APP_ID variable and the"\
+              "set the CHANGELOG_SYNC_APP_CLIENT_ID variable and the"\
               "CHANGELOG_SYNC_APP_PRIVATE_KEY secret. See the header comment in"\
               ".github/workflows/changelog.yml."
           fi
@@ -78,7 +81,7 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
-          app-id: ${{ vars.CHANGELOG_SYNC_APP_ID }}
+          client-id: ${{ vars.CHANGELOG_SYNC_APP_CLIENT_ID }}
           private-key: ${{ secrets.CHANGELOG_SYNC_APP_PRIVATE_KEY }}
           # Scope the installation token to this repository instead of every
           # repository the App happens to be installed on.
@@ -145,7 +148,7 @@ jobs:
           else
             echo "::warning title=changelog::Could not push CHANGELOG.md. Check that"\
               "the App is still a bypass actor (mode 'always') on the 'main'"\
-              "ruleset and that CHANGELOG_SYNC_APP_ID /"\
+              "ruleset and that CHANGELOG_SYNC_APP_CLIENT_ID /"\
               "CHANGELOG_SYNC_APP_PRIVATE_KEY are current. CHANGELOG.md stays"\
               "drifted until this succeeds."
           fi
