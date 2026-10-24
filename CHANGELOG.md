@@ -140,6 +140,7 @@
 - **deps:** Bump orhun/git-cliff-action from 4.8.0 to 4.9.0
 - **deps:** Bump astral-sh/setup-uv from 9.0.0 to 10.2.0
 - **deps:** Bump orhun/git-cliff-action from 4.9.0 to 4.9.1([#117](https://github.com/TanKhoiTV/kavi-benchmark/pull/117))
+- **deps:** Bump astral-sh/setup-uv from 10.2.0 to 10.3.0([#144](https://github.com/TanKhoiTV/kavi-benchmark/pull/144))
 
 ### Ci
 
