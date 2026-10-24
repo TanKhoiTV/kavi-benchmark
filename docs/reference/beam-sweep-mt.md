@@ -36,7 +36,7 @@ Repeats are what make the latency column citable: every figure above is a **medi
 
 These are **host CPU** numbers. Whether beam=4 fits the 2.0 s turnaround gate is an on-device question (ADR-020, ADR-023), because the MT decoder runs on CPU with no NPU offload. Use the quality columns here to pick a beam, and the device measurement to accept it.
 
-**Do not quote the p50 column as a turnaround figure.** It excludes audio capture, ASR, TTS, and every handoff; it is a laptop CPU decoding a cached model. The on-device half arrives from the app runner, and the encoder's HTP profile from Qualcomm AI Hub (kavi-android#31) — neither can be inferred from the table above.
+**Do not quote the p50 column as a turnaround figure.** It excludes audio capture, ASR, TTS, and every handoff; it is a laptop CPU decoding a cached model. The encoder half is now measured separately — **2.03 ms on HTP v73, 0.4% of the MT stage** ([`aihub-encoder-profile.md`](aihub-encoder-profile.md)) — so the stage is decoder time; the on-device pipeline half still arrives from the app runner and cannot be inferred from the table above.
 
 Regenerate this file from a finished sweep without re-running it:
 
