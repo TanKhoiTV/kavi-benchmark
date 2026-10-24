@@ -1,16 +1,18 @@
-# Cold reference — superseded / deprecated docs
+# Cold reference — historical benchmark docs
 
-These docs are **no longer current** but are kept for history and for the
-content they still contribute. Do **not** treat them as source of truth for
-architecture — the ADRs in `../decisions/` are.
+These are **no longer current** but are kept for the content they still
+contribute. Do not treat them as source of truth for architecture — decisions
+live in `../decisions/`, and the on-device records are in the private
+`kavi-android` repo.
 
 | File | Why it is here | Still consulted for |
 | --- | --- | --- |
-| `benchmarking-plan.md` | Pre-decision landscape; architecture decided in ADR-007/008/009 | Dataset corpus catalog + licenses (§3), noise-mixing recipe (§3.5), RTranslator baseline notes (§5) |
-| `benchmarking-todo.md` | v0 harness implemented (PR #28/#36); superseded by `.pi/PLAN.md` | Historical checklist |
-| `phase-4-qnn-plan.md` | Superseded scope — Whisper/Piper QNN paths obsolete (ADR-008, ADR-024 + ADR-009) | **Opus-MT encoder conversion path only** (§2 pipeline, §8 verified QAIRT commands, §9 calibration) |
-| `denoising-gate-results.md` | One-off Phase-6 gate result | Wiener-adoption evidence for ADR-018 / android plan Risk R1 |
-| `beam-sweep-host-aggregate.md` | Citable reduction of the host beam sweep (raw output is gitignored) | Quality-vs-latency evidence for ADR-020 open parameter #6 |
-| `contest-info.md` | Byte-identical copy of the canonical parent-repo doc (`aivoice-2026/docs/contest-info.md`) | n/a |
-| `additional-reading.md` | Static reading list | n/a |
-| `rtranslator-comparison.md` | Relocated from `decisions/` (was `ADR-007-vs-RTranslator-comparison.md`); records no decision | Architecture map (§1), per-dimension comparison (§3), learnings (§4) |
+| `benchmarking-plan.md` | Pre-decision dataset/candidate landscape | Corpus catalog + licenses (§3), noise-mixing recipe (§3.5), RTranslator baseline notes (§5) |
+| `benchmarking-todo.md` | The v0 harness execution checklist (implemented) | Historical checklist; the on-device rows now point at `kavi-android` |
+| `denoising-gate-results.md` | One-off host-side gate result | Wiener-adoption evidence for the on-device denoiser record (ADR-018) |
+| `beam-sweep-host-aggregate.md` | Citable reduction of the host beam sweep (raw output is gitignored) | Quality-vs-latency evidence for open parameter #6 (MT beam width) |
+
+Moved out during the 2026-10 re-organisation: `phase-4-qnn-plan.md` and
+`rtranslator-comparison.md` → `kavi-android/docs/reference/`; `contest-info.md`
+and `additional-reading.md` → `aivoice-2026`. Nothing was lost, and nothing was
+copied twice.

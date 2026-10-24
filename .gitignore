@@ -9,24 +9,17 @@ output.wav
 resampled.wav
 voices/
 
-# Runtime experiment data / outputs (canonical scripts now live under archive/)
+# Runtime experiment data / outputs
 experiments/
 
 # Third-party model artifacts — not vendored; fetch with `make models`.
-# Only `models/qnn/README.md` is ours to track; everything else under models/
-# is either third-party weights or generated build output.
+# Everything under models/ is either third-party weights or generated output.
 models/*
-!models/qnn/
-models/qnn/*
-!models/qnn/README.md
 
 # Third-party eval audio (FLEURS-derived; see NOTICE). Not redistributed and
 # not currently read by the test suite; kept out of VCS when present locally.
 tests/fixtures/fleurs_vi_0.wav
 tests/fixtures/ref_mel_fleurs_vi_vn_0.npy
-
-# QNN smoke test artifacts
-bench/qnn/smoke/
 
 # Backup files
 *.bak
@@ -37,7 +30,7 @@ bench/qnn/smoke/
 .venv/
 .venv-qairt/
 
-# Runtime logs (legacy logs/ is tracked under archive/)
+# Runtime logs
 logs/
 
 # Benchmark harness outputs (generated)
@@ -50,6 +43,8 @@ eval_manifest_v1.json
 
 # Pi coding agent configurations
 .pi/
+# Local scratch (GitHub API dumps, issue bodies); ruff excludes it too
+.tmp/
 .pi-subagents/
 
 # Per-machine env vars (contains absolute paths)

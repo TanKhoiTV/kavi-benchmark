@@ -75,7 +75,7 @@ being **100% offline**.
 
 ## 3. Models to benchmark (candidates)
 
-> License-clean set only (see `docs/decisions/ADR-029-license-gate.md`). "v0?" =
+> License-clean set only (see `aivoice-2026/docs/decisions/ADR-029-license-gate.md`). "v0?" =
 > in the first lean harness.
 
 ### ASR
@@ -229,7 +229,7 @@ RIRS_NOISES = public-safe.
 
 ### Phase 4 — On-device runner (QNN)
 
-- [ ] Convert Whisper-Small-Quantized-QNN, ORT+QNN-OpusMT, Piper-QNN to QNN artifacts (`<model>.cpp` → HTP v73 context binary; Linux/WSL or Windows host with the SDK, tools and libraries required by [the Phase 4 environment contract](phase-4-qnn-plan.md#1-environment-contract-host-build-time-only)).
+- [ ] Convert Whisper-Small-Quantized-QNN, ORT+QNN-OpusMT, Piper-QNN to QNN artifacts (`<model>.cpp` → HTP v73 context binary). **Moved:** this is on-device work — see `kavi-android/docs/reference/phase-4-qnn-plan.md` §1 for the environment contract.
 - [ ] Android instrumented runner: read manifest, run candidates, log latency/
       RTF/peak RSS, dump outputs.
 - [ ] Re-run v0 slice on-device; answer: **does QNN meaningfully beat CPU?**
@@ -287,6 +287,6 @@ checklist.
 - `docs/reference/benchmarking-plan.md` — datasets, candidate landscape, harness design, v0.
 - `docs/specifications.md` §3 — the six contest metrics + thresholds.
 - [open-parameters register](../decisions/README.md#open-parameters) — tech-stack choices still open.
-- `docs/decisions/ADR-029-license-gate.md` — license-clean candidate set.
+- `aivoice-2026/docs/decisions/ADR-029-license-gate.md` — license-clean candidate set.
 - ADR-001 / 002 / 003 — offline-first, target platform, Hexagon runtime.
-- `docs/onboarding.md` — architecture decoded for newcomers.
+- `aivoice-2026/docs/onboarding.md` — architecture decoded for newcomers.

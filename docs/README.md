@@ -1,69 +1,43 @@
-# Documentation
+# Documentation — benchmark track
 
-Internal documentation for the Kavi prototype. **Public** contest docs
-(`contest-info.md`, `specifications.md`) live in the parent repo
-`aivoice-2026/docs/` (the prototype copy of contest-info is deprecated — see
-`reference/contest-info.md`). The registration checklist, Luma registration
-answers and pitch deck were removed from both repos; they exist in no current
-tree.
+This repository is the **host-side track**: the benchmark harness, the eval sets
+and the published results. The public program docs (contest brief, specification,
+onboarding) live in `aivoice-2026`; the on-device track (app, ADR register,
+QAIRT conversion) lives in the private `kavi-android`.
 
 ## Current — read these first
 
-- `onboarding.md` — new-member guide: decodes the jargon, the ADRs, and the
-  repo layout. **Start here.**
-- `onboarding-quiz.md` — comprehension checkpoint (12 questions).
-- `android-implementation-plan.md` — implementation plan, **milestone view**:
-  M0–M6, risks R1–R5, execution order.
-- `android-kotlin-cpp-implementation-plan.md` — implementation plan, **file-level
-  view** (Kotlin/C++ file plan, JNI contract, Build A–F sequencing,
-  `.kavi.yaml` wiring). Companion to the milestone plan above.
-- `ndk-conversion-runbook.md` — step-by-step NDK + QAIRT runbook for the one
-  remaining QNN artifact (Opus-MT encoder → HTP v73 context binary).
-- `rtranslator-test-protocol.md` — Phase-5 APK test procedure (live).
-- `issue-116-quantization-ab-plan.md` — Opus-MT encoder w8a16 vs w8a8 A/B
-  (closes ADR-003 open parameter #7). Phases P0–P7, decision rule, and the
-  pre-requisite gap analysis. Gated on Milestone 3.
-- `ndk-conversion-runbook.md` — step-by-step NDK/QAIRT conversion runbook
-  (Opus-MT encoder → HTP v73 context binary); required reading for the plan above.
-- `specifications.md` — the six objective metrics + hard thresholds; cited by
-  every plan as the gate contract.
+- `benchmark/benchmark-results-fleurs-vivos.md` — the published v1 results:
+  per-candidate tables with notes, regenerated from `benchmark/raw-results/*.csv`.
+- `benchmark/report/report.pdf` — the Typst report (source under
+  `benchmark/report/`, layout in `benchmark/report-layout.md`).
+- `benchmark/register-missing-candidates.md` — what is registered but not yet run.
+- `decisions/` — the public register index: ADR-032 (MT model choice, pending) and
+  the open-parameter rows that belong to a public claim.
 
-## Hot reference — source of truth
+## Hot reference — still consulted
 
-- `decisions/` — Architecture Decision Records, one decision per record
-  (`ADR-001` … `ADR-031`). Start at `decisions/README.md` — the index with the
-  supersession graph and the open parameters. Immutable by convention; status
-  changes are recorded in the ADR header.
+- `reference/benchmarking-plan.md` — pre-decision corpus catalog and licensing
+  notes (§3, §4.4–§4.5). The architecture it predates is recorded in the private
+  ADR register.
+- `reference/denoising-gate-results.md` — the host-side Wiener gate. This is the
+  measurement ADR-018 points at; it stays public because it was measured here.
+- `reference/beam-sweep-host-aggregate.md` — the citable reduction of the host
+  beam sweep behind open parameter #6 (MT beam width).
 
-- `benchmark/` — published v1 results: `benchmark-results-fleurs-vivos.md` (tables
-  with per-candidate notes) and `report/report.pdf` (the Typst report, laid out
-  per `report-layout.md`). The `.md` tables and `report/charts/*.png` are
-  regenerated from `benchmark/raw-results/*.csv` by `bench/scripts/`; the raw CSVs
-  are generated from `run_results.json` by `bench/scripts/results_to_csv.py`, which
-  records the beam width the run results themselves do not carry.
+## Cold reference — historical
 
-## Cold reference — superseded / deprecated
+- `reference/benchmarking-todo.md` — the v0 harness execution checklist
+  (implemented).
+- `reference/README.md` — why each file in `reference/` is still here.
 
-- `reference/` — everything no longer current, kept for history and for the
-  content still consulted:
-  - `benchmarking-plan.md` — pre-decision dataset/candidate landscape; the
-    **corpus catalog (§3) and licensing notes** are still consulted for eval work.
-  - `benchmarking-todo.md` — v0 harness execution checklist (implemented).
-  - `phase-4-qnn-plan.md` — QNN conversion spec; **only the Opus-MT encoder
-    path (§2, §8, §9) is live**; Whisper/Piper sections are reference-only.
-  - `denoising-gate-results.md` — Phase-6 gate result (Wiener ADOPTED).
-  - `contest-info.md` — stale copy; canonical version is in the parent repo.
-  - `additional-reading.md` — reading list.
-  - `rtranslator-comparison.md` — RTranslator 2.1.5 architectural comparison
-    (relocated out of `decisions/`; records no decision).
+## Not here any more
 
-## Planned / deferred
+Moved during the 2026-10 re-organisation (TanKhoiTV/kavi-prototype#129):
 
-- `architecture.md` — system architecture (deferred; the inference architecture
-  is now recorded across ADR-007 plus ADR-013–ADR-022 — see
-  `decisions/README.md`).
-- Legacy ADRs (`001`, `002`) are in `../archive/docs/adr/`.
-
-## Reference
-
-The full previous documentation set is preserved under `../archive/docs/`.
+| Was | Now | Why |
+| --- | --- | --- |
+| `docs/onboarding*.md`, `docs/reference/additional-reading.md`, `archive/` | `aivoice-2026` | program layer |
+| `docs/specifications.md`, `docs/reference/contest-info.md` | `aivoice-2026/docs/` (canonical copies already existed) | program layer; the duplicates are gone |
+| `docs/android-*-plan.md`, `docs/ndk-conversion-runbook.md`, `docs/rtranslator-test-protocol.md`, `docs/issue-116-quantization-ab-plan.md`, `docs/reference/phase-4-qnn-plan.md`, `docs/reference/rtranslator-comparison.md`, `docs/decisions/ADR-001…028` | `kavi-android` (private) | on-device mechanism |
+| `bench/qnn/**`, `scripts/env.py`, `scripts/qairt-env.*`, `.kavi.env.example` | `kavi-android` (private) | conversion toolchain travels with its only caller |

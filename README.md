@@ -5,29 +5,31 @@ Kavi is a fully **offline, on-device** speech-to-speech translation system for
 **OneVoice AI Challenge** (Saigon AI Hub × Qualcomm, May–Nov 2026) and targeting
 a Snapdragon 8 Gen 2 Android phone.
 
-This repository is the **implementation** submodule of
-[`aivoice-2026`](https://github.com/TanKhoiTV/aivoice-2026) — the umbrella repo
-that hosts the public-facing documentation and CI. Code and internal docs live
-here; the third-party model weights are fetched on demand with `make models`
-rather than committed (see [`NOTICE`](NOTICE)).
+This repository is the **host-side track** — the benchmark harness and the
+published results — and a submodule of
+[`aivoice-2026`](https://github.com/TanKhoiTV/aivoice-2026), which hosts the
+public program docs and CI. The third-party model weights are fetched on demand
+with `make models` rather than committed (see [`NOTICE`](NOTICE)).
 
-> The Android application lives in a separate private repository and is not
-> publicly available.
+> The on-device track — the Android application, its ADR register and the QAIRT
+> conversion toolchain — lives in a separate private repository (`kavi-android`)
+> and is not publicly available.
 
 ## Repository layout
 
 | Path | Purpose |
 | ------ | --------- |
 | `models/` | CTranslate2 Opus-MT VI→EN weights + SentencePiece tokenizers (fetch with `make models`; not committed). |
-| `scripts/` | Asset fetchers/verifiers (`make models` / `make data` / `make verify-assets`) + QAIRT env helpers. |
+| `scripts/` | Asset fetchers/verifiers (`make models` / `make data` / `make verify-assets`) + the public-boundary check. |
 | `assets.lock.toml` | Pinned third-party asset revisions + SHA-256 digests. |
 | `voices/` | Piper TTS voice models (e.g. `en_US-lessac-medium`). |
-| `bench/` | v0 benchmark harness: candidate adapters, scorer, eval-manifest schema, data prep. |
-| `docs/` | Internal documentation (onboarding, benchmarking plan, ADRs). |
+| `bench/` | Benchmark harness: candidate adapters, scorer, eval-manifest schema, data prep. |
+| `docs/benchmark/` | Published v1 results, the Typst report and its charts. |
+| `docs/reference/` | Benchmarking plan (corpus catalog), denoising gate, beam-sweep aggregate. |
+| `docs/decisions/` | The public register: ADR-032 (MT model choice) and the open parameters measured here. |
+| `.kavi.yaml` | The published gates and claims — the public half of the split configuration. |
 | `eval_data/` | Generated eval audio / downloaded corpora used by the harness. |
-| `experiments/` | Slot for pipeline experiments (e.g. denoising validation). |
 | `bench-results/` | Benchmark run outputs (gitignored). |
-| `archive/` | The previous implementation, preserved in full for reference. |
 
 ## Quickstart
 
@@ -60,8 +62,8 @@ ASR items use real VI/EN speech from FLEURS parquets. Real-noise clips
 (MUSAN/RIRS_NOISES) can be swapped in via `build_lean_manifest(real_noise_dir=...)`.
 See `docs/reference/benchmarking-plan.md` and `docs/reference/benchmarking-todo.md`.
 
-> Public contest documentation (contest info, specifications) lives in the
-> parent repo `aivoice-2026/docs/`.
+> Public program documentation (contest info, specifications, onboarding) lives
+> in the parent repo `aivoice-2026/docs/`.
 
 ## Standards & tooling
 
@@ -72,6 +74,7 @@ License: MIT (see [`LICENSE`](LICENSE)).
 
 ## Status
 
-Early-stage prototype. The prior implementation is archived under `archive/`;
+Early-stage prototype. The prior implementation is archived in
+`aivoice-2026/archive/`;
 the v0 benchmark harness lives in `bench/`. Application source (`src/`) is
 still to be scaffolded.

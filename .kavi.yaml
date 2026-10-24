@@ -11,8 +11,8 @@
 # first reads those values. Until then it reports every unmapped gate as
 # *unverifiable* rather than passing quietly.
 #
-# Per-machine paths (SDK, NDK) are set via environment variables — see the
-# *_env fields and the .kavi.env file.
+# There are no per-machine values here: SDK/NDK roots and their environment
+# variables are on-device mechanism and live in `kavi-tuning.yaml`.
 
 ---
 metadata:
@@ -20,21 +20,6 @@ metadata:
   target_device: "Meizu 21 Note (Snapdragon 8 Gen 2 / SM8550 / Hexagon HTP v73)"
   target_android: 16 # API 36
   last_updated: "2026-10-24" # split: the mechanism moved to kavi-android/kavi-tuning.yaml
-
-# ── Toolchain (temporary public home) ───────────────────────────────────────
-# These pins are mechanism, not claim, and move to `kavi-android` with the QAIRT
-# conversion toolchain. They stay here until that move lands because
-# `scripts/env.py` and its tests read them: splitting the file is not a reason to
-# break the public conversion path.
-
-sdk:
-  qairt:
-    version: "2.31.0.250130"
-    path_env: "QAIRT_SDK_ROOT" # set in .kavi.env
-    version_lock_reason: "Must match device qnn-2.31 / HTP v73 runtime. Do NOT upgrade."
-  ndk:
-    version: "26.1.10909125" # r26b — Google's label; QAIRT's sdk.yaml mislabels it r26c
-    path_env: "ANDROID_NDK_ROOT" # set in .kavi.env
 
 # ── ASR gates (Dual Zipformer, ADR-008) ────────────────────────────────────
 

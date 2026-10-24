@@ -238,7 +238,7 @@ estimates), memory, licensing, and Qualcomm AI Hub availability.
 
 > Sources: archived `architecture.md` + `docs/adr/001-prioritize-hy-mt-over-nllb.md`
 > (ADR-001) + Context7 (CTranslate2, Transformers) + a second external MT analysis
-> pass (Claude). The prototype (`archive/pipeline.py`, `models/opus-mt-vi-en-ct2`)
+> pass (Claude). The prototype (`aivoice-2026/archive/pipeline.py`, `models/opus-mt-vi-en-ct2`)
 > runs **Opus-MT vi-en via CTranslate2 int8**; ADR-001 selected **Hy-MT1.5** (NLLB
 > only as reference). MT is **bidirectional** — VI→EN and EN→VI.
 
@@ -513,7 +513,7 @@ slice is marginal, that's a cheap, legitimate signal to reconsider effort alloca
 
 ### Pre-ASR denoising — status & open gate
 
-> Sourced from a scouting pass over `archive/` (the old implementation). **Not a
+> Sourced from a scouting pass over `aivoice-2026/archive/` (the old implementation). **Not a
 > decision here** — it is an open pipeline question the register should record, and
 > this harness (§6/§8) is the vehicle to close it.
 
@@ -527,7 +527,7 @@ slice is marginal, that's a cheap, legitimate signal to reconsider effort alloca
   WER. Both denoisers *hurt* WER — but RNNoise used the wrong `stationary` setting
   and the wrong ASR model (Medium, not Small int8).
 - **Decision on record** (archived denoising-scope ADR,
-  `archive/docs/adr/002-denoising-experiment-scope.md`): Wiener (`noisereduce`,
+  `aivoice-2026/archive/docs/adr/002-denoising-experiment-scope.md`): Wiener (`noisereduce`,
   `prop_decrease=0.5`) = primary, RNNoise `stationary=False` = secondary.
   **Binary gate:** if denoisers beat raw-noisy WER → tune `prop_decrease` on
   50–100 files; else **VAD-only pipeline**. Phase-1 was scoped to 10 VIVOS files ×
@@ -554,7 +554,7 @@ slice is marginal, that's a cheap, legitimate signal to reconsider effort alloca
 
 - **Final dataset set** — VSS (MIT), PhoST (research-only), and **InfoRe** licenses now resolved: VSS/PhoST as
   noted; **InfoRe confirmed AVOID** (no published terms, 401-gated) and `25hours_single` also **AVOID** (license
-  unknown, InfoRe-derived) — see `docs/decisions/ADR-029-license-gate.md` + PR #35.
+  unknown, InfoRe-derived) — see `aivoice-2026/docs/decisions/ADR-029-license-gate.md` + PR #35.
 - **VI→EN ST corpus** — adopt FLEURS ID-alignment, the bespoke gold set, or both?
 - **RTranslator snapshot** — which version/commit tested + dated in writeup; APK-eval
   task owner & timeline.
