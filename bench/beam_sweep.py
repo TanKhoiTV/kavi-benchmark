@@ -296,7 +296,10 @@ def load_rows(out_dir: Path) -> list[dict[str, Any]]:
     """Re-read a finished sweep so the report regenerates without recomputing."""
     rows: list[dict[str, Any]] = []
     for path in sorted(out_dir.glob("beam-*/sweep_results.json")):
-        rows.extend(json.loads(path.read_text(encoding="utf-8")))
+        try:
+            rows.extend(json.loads(path.read_text(encoding="utf-8")))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError(f"cannot read {path}: {exc}") from exc
     if not rows:
         raise ValueError(f"no beam-*/sweep_results.json under {out_dir}")
     return rows
@@ -373,6 +376,8 @@ def write_markdown(
 {rows}
 
 Corpus BLEU signature: `{summary["beams"][0]["signature"] if summary["beams"] else "n/a"}`.
+
+Decode guard: **on**. `max_decoding_length` is sized from the utterance (`bench/decode.py`: 1.5 x source pieces, clamped to [48, 256]) instead of a flat 256. Without it, CTranslate2's greedy decode loops on long Vietnamese input and the looped items dominate both the latency tail and the BLEU mean.
 
 ## Verdict
 
