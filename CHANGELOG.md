@@ -65,6 +65,7 @@
 - Correct stale references and index gaps in docs and ADRs([#109](https://github.com/TanKhoiTV/kavi-benchmark/pull/109))
 - Phase-4 conversion does not require a Windows host([#119](https://github.com/TanKhoiTV/kavi-benchmark/pull/119))
 - **adr:** Flag ADR-020 beam-width claim as unmeasured([#120](https://github.com/TanKhoiTV/kavi-benchmark/pull/120))
+- **agents:** Describe the benchmark track, not the pre-move layout([#149](https://github.com/TanKhoiTV/kavi-benchmark/pull/149))
 
 ### Features
 
