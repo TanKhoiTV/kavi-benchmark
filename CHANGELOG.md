@@ -17,7 +17,7 @@
 - **android:** Remove stale .dlc reference in MainActivity.kt
 - **bench:** Guard peak_ram_mb against missing resource module on Windows (#80)
 - **qnn:** Use repo-root-relative paths in calibration input lists (#85)
-- **changelog:** Stop duplicating the PR link in generated entries([#127](https://github.com/TanKhoiTV/kavi-prototype/pull/127))
+- **changelog:** Stop duplicating the PR link in generated entries([#127](https://github.com/TanKhoiTV/kavi-benchmark/pull/127))
 
 ### Documentation
 
@@ -62,9 +62,9 @@
 - **adr:** Add the ADR index, withdraw ADR-004, move the comparison doc
 - **adr:** Repoint ADR cross-references after the split
 - Tag code-fence languages in repo markdown
-- Correct stale references and index gaps in docs and ADRs([#109](https://github.com/TanKhoiTV/kavi-prototype/pull/109))
-- Phase-4 conversion does not require a Windows host([#119](https://github.com/TanKhoiTV/kavi-prototype/pull/119))
-- **adr:** Flag ADR-020 beam-width claim as unmeasured([#120](https://github.com/TanKhoiTV/kavi-prototype/pull/120))
+- Correct stale references and index gaps in docs and ADRs([#109](https://github.com/TanKhoiTV/kavi-benchmark/pull/109))
+- Phase-4 conversion does not require a Windows host([#119](https://github.com/TanKhoiTV/kavi-benchmark/pull/119))
+- **adr:** Flag ADR-020 beam-width claim as unmeasured([#120](https://github.com/TanKhoiTV/kavi-benchmark/pull/120))
 
 ### Features
 
@@ -77,10 +77,10 @@
 - **qnn:** Add Piper surgery script, calibration lists, and QNN adapter stubs
 - **qnn:** Whisper decoder patch + Opus-MT encoder conversion (#75)
 - Add .kavi.yaml — single source of truth for pinned config values (#98)
-- **scripts:** Add PR review-status dashboard, restore root AGENTS.md([#125](https://github.com/TanKhoiTV/kavi-prototype/pull/125))
-- **qnn:** Prepare the Opus-MT w8a16/w8a8 A/B (P0-P2)([#123](https://github.com/TanKhoiTV/kavi-prototype/pull/123))
-- **ci:** Assert the public boundary in make check([#137](https://github.com/TanKhoiTV/kavi-prototype/pull/137))
-- **bench:** Add M2M-100, Moonshine, Zipformer and Hy-MT candidates with v1 benchmark results([#124](https://github.com/TanKhoiTV/kavi-prototype/pull/124))
+- **scripts:** Add PR review-status dashboard, restore root AGENTS.md([#125](https://github.com/TanKhoiTV/kavi-benchmark/pull/125))
+- **qnn:** Prepare the Opus-MT w8a16/w8a8 A/B (P0-P2)([#123](https://github.com/TanKhoiTV/kavi-benchmark/pull/123))
+- **ci:** Assert the public boundary in make check([#137](https://github.com/TanKhoiTV/kavi-benchmark/pull/137))
+- **bench:** Add M2M-100, Moonshine, Zipformer and Hy-MT candidates with v1 benchmark results([#124](https://github.com/TanKhoiTV/kavi-benchmark/pull/124))
 
 ### Miscellaneous
 
@@ -109,18 +109,19 @@
 - Stop tracking third-party artifacts and personal docs
 - Normalize line endings and make local checks deterministic
 - **env:** Make the QAIRT helper portable and add a Windows one
-- **env:** Default ANDROID_NDK_ROOT to the installer's SDK root([#118](https://github.com/TanKhoiTV/kavi-prototype/pull/118))
-- Add CODEOWNERS so PRs auto-request a reviewer([#130](https://github.com/TanKhoiTV/kavi-prototype/pull/130))
-- **scripts:** Sync the boundary check with the umbrella copy([#138](https://github.com/TanKhoiTV/kavi-prototype/pull/138))
+- **env:** Default ANDROID_NDK_ROOT to the installer's SDK root([#118](https://github.com/TanKhoiTV/kavi-benchmark/pull/118))
+- Add CODEOWNERS so PRs auto-request a reviewer([#130](https://github.com/TanKhoiTV/kavi-benchmark/pull/130))
+- **scripts:** Sync the boundary check with the umbrella copy([#138](https://github.com/TanKhoiTV/kavi-benchmark/pull/138))
+- Name this repo kavi-benchmark in its own docs and config([#148](https://github.com/TanKhoiTV/kavi-benchmark/pull/148))
 
 ### Refactoring
 
 - **bench:** Make manifest candidate-agnostic + cheap FLEURS reads
 - **bench:** Cache candidate instances per cid in run_manifest
 - **repo:** Untrack the private android submodule
-- **env:** Resolve SDK/NDK paths in one platform-aware module([#136](https://github.com/TanKhoiTV/kavi-prototype/pull/136))
-- **config:** Split .kavi.yaml into published gates and private tuning([#146](https://github.com/TanKhoiTV/kavi-prototype/pull/146))
-- Trim the benchmark repo to the host-side track([#147](https://github.com/TanKhoiTV/kavi-prototype/pull/147))
+- **env:** Resolve SDK/NDK paths in one platform-aware module([#136](https://github.com/TanKhoiTV/kavi-benchmark/pull/136))
+- **config:** Split .kavi.yaml into published gates and private tuning([#146](https://github.com/TanKhoiTV/kavi-benchmark/pull/146))
+- Trim the benchmark repo to the host-side track([#147](https://github.com/TanKhoiTV/kavi-benchmark/pull/147))
 
 ### Testing
 
@@ -134,7 +135,7 @@
 - Pin third-party assets and add fetch/verify tooling
 - **deps:** Bump orhun/git-cliff-action from 4.8.0 to 4.9.0
 - **deps:** Bump astral-sh/setup-uv from 9.0.0 to 10.2.0
-- **deps:** Bump orhun/git-cliff-action from 4.9.0 to 4.9.1([#117](https://github.com/TanKhoiTV/kavi-prototype/pull/117))
+- **deps:** Bump orhun/git-cliff-action from 4.9.0 to 4.9.1([#117](https://github.com/TanKhoiTV/kavi-benchmark/pull/117))
 
 ### Ci
 
@@ -147,8 +148,8 @@
 - Pin GitHub Action tags to full commit SHAs
 - Stop recursing into the private kavi-android submodule
 - **changelog:** Serialise changelog runs and rebase before pushing
-- Push CHANGELOG.md with a GitHub App token([#126](https://github.com/TanKhoiTV/kavi-prototype/pull/126))
-- Scope the lint job to read-only and stop persisting credentials([#121](https://github.com/TanKhoiTV/kavi-prototype/pull/121))
-- Scope changelog permissions to the job that needs write([#122](https://github.com/TanKhoiTV/kavi-prototype/pull/122))
-[unreleased]: https://github.com/TanKhoiTV/kavi-prototype/compare/v0.1.0...HEAD
+- Push CHANGELOG.md with a GitHub App token([#126](https://github.com/TanKhoiTV/kavi-benchmark/pull/126))
+- Scope the lint job to read-only and stop persisting credentials([#121](https://github.com/TanKhoiTV/kavi-benchmark/pull/121))
+- Scope changelog permissions to the job that needs write([#122](https://github.com/TanKhoiTV/kavi-benchmark/pull/122))
+[unreleased]: https://github.com/TanKhoiTV/kavi-benchmark/compare/v0.1.0...HEAD
 
