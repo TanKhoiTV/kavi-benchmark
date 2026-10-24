@@ -5,18 +5,21 @@ Guidance for AI coding agents working in this repository.
 ## What this repo is
 
 - **Kavi** — offline on-device speech-to-speech translation (VI↔EN), for the OneVoice AI Challenge.
-- This repo is **public**, as is the parent `aivoice-2026`. The Android app lives in the
-  separate private `kavi-android` repo. Never commit secrets, credentials, or private
-  implementation details here (`.kavi.env` is gitignored for this reason).
+- This repo (`kavi-benchmark`) is the **host-side track**: the benchmark harness and the
+  published results. It is **public**, as is the parent `aivoice-2026` (program docs,
+  onboarding). The Android app, its ADR register and the QAIRT conversion toolchain live in
+  the private `kavi-android` repo.
+- Never commit secrets, credentials, private implementation details or private-track
+  artifacts here — `make check` fails on them (`scripts/leak_check.py`).
 
 ## Layout (current)
 
-- `models/` — MT weights at root (kept for reuse; see `.gitignore`).
-- `voices/` — Voice models.
-- `bench/` — v0 benchmark harness (candidate adapters, scorer, eval-manifest schema, data prep).
-- `docs/` — internal docs.
-- `eval_data/` — generated eval audio / downloaded corpora.
-- `archive/` — the entire previous implementation, preserved for reference.
+- `bench/` — benchmark harness: candidate adapters, scorer, eval-manifest schema, data prep.
+- `docs/benchmark/` — published v1 results, the Typst report and charts.
+- `docs/reference/` — benchmarking plan (corpus catalog), denoising gate, beam-sweep aggregate.
+- `docs/decisions/` — public register: ADR-032 (pending) + the open parameters measured here.
+- `.kavi.yaml` — the published gates and claims (the mechanism lives in `kavi-android/kavi-tuning.yaml`).
+- `models/`, `voices/`, `eval_data/` — fetched generated assets, gitignored.
 
 ## Conventions
 
@@ -29,7 +32,7 @@ Guidance for AI coding agents working in this repository.
 
 ## Working here
 
-1. Check `archive/` first for reusable logic.
+1. Check `aivoice-2026/archive/` (the previous implementation) for reusable logic.
 2. Prefer reusing `models/` weights over re-downloading.
 3. Keep the public/private boundary: this repo and its parent are both **public**, so
    private implementation details belong in the private `kavi-android` repo.
