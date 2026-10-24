@@ -85,6 +85,7 @@
 - **ci:** Assert the public boundary in make check([#137](https://github.com/TanKhoiTV/kavi-benchmark/pull/137))
 - **bench:** Add M2M-100, Moonshine, Zipformer and Hy-MT candidates with v1 benchmark results([#124](https://github.com/TanKhoiTV/kavi-benchmark/pull/124))
 - **bench:** Port the VAD noise benchmark onto the post-move layout([#151](https://github.com/TanKhoiTV/kavi-benchmark/pull/151))
+- **bench:** Size the decode cap from the input, not the model([#161](https://github.com/TanKhoiTV/kavi-benchmark/pull/161))
 
 ### Miscellaneous
 
