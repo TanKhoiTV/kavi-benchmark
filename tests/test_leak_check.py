@@ -166,7 +166,7 @@ class TestGitlinks:
             "# a comment\n"
             '[submodule "prototype"]\n'
             "\tpath = prototype\n"
-            "\turl = git@github.com:TanKhoiTV/kavi-prototype.git\n"
+            "\turl = git@github.com:TanKhoiTV/kavi-benchmark.git\n"
         )
         assert submodule_entries(text) == [('[submodule "prototype"]', "prototype")]
 

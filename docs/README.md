@@ -33,7 +33,7 @@ QAIRT conversion) lives in the private `kavi-android`.
 
 ## Not here any more
 
-Moved during the 2026-10 re-organisation (TanKhoiTV/kavi-prototype#129):
+Moved during the 2026-10 re-organisation (TanKhoiTV/kavi-benchmark#129):
 
 | Was | Now | Why |
 | --- | --- | --- |

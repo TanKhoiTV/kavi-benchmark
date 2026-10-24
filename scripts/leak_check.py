@@ -1,7 +1,7 @@
 """Assert the public boundary: no private-track artifacts in this repository.
 
 The project is split across three repositories: this umbrella repo and
-``kavi-prototype`` (now the host-side benchmark) are public, while the on-device
+``kavi-benchmark`` (now the host-side benchmark) are public, while the on-device
 Android track (``kavi-android``) is private. This check is what *measures* that
 boundary, so it runs in CI: a file whose type belongs to the private track cannot
 reach ``main``, and the private repo cannot become a submodule of a public one.
@@ -21,7 +21,7 @@ sibling is legitimate -- the umbrella repo tracks the benchmark as ``prototype/`
 -- so allowed paths are passed in explicitly with ``--allow-gitlink`` rather than
 being baked into the rules; each repo supplies its own list.
 
-The same file is used by ``kavi-prototype``, and is stdlib-only and
+The same file is used by ``kavi-benchmark``, and is stdlib-only and
 self-contained on purpose so the two copies stay identical.
 
 Exit status is non-zero when anything is found.

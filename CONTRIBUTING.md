@@ -1,4 +1,4 @@
-# Contributing to Kavi (kavi-prototype)
+# Contributing to Kavi (kavi-benchmark)
 
 ## Repository role
 
@@ -9,7 +9,7 @@ they are fetched on demand (see [Models & data](#models--data)).
 
 ## Cloning
 
-`kavi-prototype` is a **Git submodule** of the public parent repo
+`kavi-benchmark` is a **Git submodule** of the public parent repo
 [`aivoice-2026`](https://github.com/TanKhoiTV/aivoice-2026). That means it does
 **not** come down with a normal `git clone` of the parent. Both repositories are
 public, so no access request is needed.
@@ -34,7 +34,7 @@ git submodule update --init --recursive
 ### 3. Enter the prototype
 
 ```bash
-cd prototype          # you are now inside kavi-prototype
+cd prototype          # you are now inside kavi-benchmark
 git checkout main     # submodules start on a detached commit; switch to a branch
 ```
 

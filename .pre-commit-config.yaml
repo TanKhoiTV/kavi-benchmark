@@ -1,4 +1,4 @@
-# Pre-commit hooks for kavi-prototype
+# Pre-commit hooks for kavi-benchmark
 # commitlint enforces Conventional Commits on every commit message.
 # Activate with: uv run pre-commit install
 # (writes .git/hooks/commit-msg so the hook runs on `git commit`)

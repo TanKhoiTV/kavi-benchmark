@@ -1,6 +1,6 @@
 # Architecture Decision Records — public benchmark register
 
-The register is split by what each record constrains (TanKhoiTV/kavi-prototype#129).
+The register is split by what each record constrains (TanKhoiTV/kavi-benchmark#129).
 This directory is the **benchmark** half: it holds the decisions and open
 parameters whose evidence was measured here.
 
@@ -19,7 +19,7 @@ and repository, never by path — `ADR-020 — pipeline concurrency (kavi-androi
 
 | ADR | Decision | Status |
 | --- | --- | --- |
-| ADR-032 | MT model choice — Opus-MT vi→en | **Not yet written.** Tracked by TanKhoiTV/kavi-prototype#110. Until it lands, `mt.model` in `../.kavi.yaml` records the value in use and the results in `../benchmark/` record what it scored. |
+| ADR-032 | MT model choice — Opus-MT vi→en | **Not yet written.** Tracked by TanKhoiTV/kavi-benchmark#110. Until it lands, `mt.model` in `../.kavi.yaml` records the value in use and the results in `../benchmark/` record what it scored. |
 
 ## Open parameters
 
@@ -30,9 +30,9 @@ shared, so a reference to "#7" means the same parameter on either side.
 
 | # | Open parameter | Owned by | Closes when |
 | --- | --- | --- | --- |
-| 1 | **Final MT model** | ADR-032 (this repo, pending) | An MT decision ADR is written (TanKhoiTV/kavi-prototype#110). Opus-MT is in use and pinned in `../.kavi.yaml`, but the choice was never recorded. *Not measurement-gated: it needs a record, not a number.* |
+| 1 | **Final MT model** | ADR-032 (this repo, pending) | An MT decision ADR is written (TanKhoiTV/kavi-benchmark#110). Opus-MT is in use and pinned in `../.kavi.yaml`, but the choice was never recorded. *Not measurement-gated: it needs a record, not a number.* |
 | 3 | **Piper engine licence path** | ADR-031 (`aivoice-2026/docs/decisions/`) | **Downstream of the TTS decision — not blocking.** Piper is fallback-only in the working position: dropped from the shipped stack → closes outright; kept as fallback → the MIT-era `rhasspy/piper` snapshot must be pinned and subprocess isolation adopted. |
-| 6 | **MT beam width** (greedy vs beam=4) | ADR-020 (private record), measured here | **Needs a number:** Phase-5 on-device latency-vs-BLEU measurement. The host-side quality half is already citable in [`../reference/beam-sweep-host-aggregate.md`](../reference/beam-sweep-host-aggregate.md) and in the published results. *(TanKhoiTV/kavi-prototype#115)* |
+| 6 | **MT beam width** (greedy vs beam=4) | ADR-020 (private record), measured here | **Needs a number:** Phase-5 on-device latency-vs-BLEU measurement. The host-side quality half is already citable in [`../reference/beam-sweep-host-aggregate.md`](../reference/beam-sweep-host-aggregate.md) and in the published results. *(TanKhoiTV/kavi-benchmark#115)* |
 
 Tracked privately (`kavi-android/docs/decisions/README.md`): **#2** on-device
 denoiser model (ADR-018) · **#4** VAD thresholds (ADR-022) · **#5** ASR
