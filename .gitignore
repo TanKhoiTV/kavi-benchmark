@@ -55,3 +55,9 @@ RTranslator/
 
 # Android app lives in the private kavi-android repo; not vendored here.
 /android
+assets/noise/musan/
+assets/noise/rirs/
+
+# macOS / IDE local files
+.DS_Store
+.idea/

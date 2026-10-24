@@ -1,0 +1,313 @@
+{
+  "files": {
+    "eval_data/vad_audio/fleurs/en/en_1662.wav": {
+      "n_samples": 178560,
+      "offset": 162272,
+      "onset": 12832
+    },
+    "eval_data/vad_audio/fleurs/en/en_1680.wav": {
+      "n_samples": 238080,
+      "offset": 207328,
+      "onset": 17952
+    },
+    "eval_data/vad_audio/fleurs/en/en_1689.wav": {
+      "n_samples": 208320,
+      "offset": 202208,
+      "onset": 3104
+    },
+    "eval_data/vad_audio/fleurs/en/en_1692.wav": {
+      "n_samples": 165440,
+      "offset": 155616,
+      "onset": 21536
+    },
+    "eval_data/vad_audio/fleurs/en/en_1711.wav": {
+      "n_samples": 157440,
+      "offset": 151008,
+      "onset": 9760
+    },
+    "eval_data/vad_audio/fleurs/en/en_1715.wav": {
+      "n_samples": 209280,
+      "offset": 203232,
+      "onset": 3616
+    },
+    "eval_data/vad_audio/fleurs/en/en_1716.wav": {
+      "n_samples": 303360,
+      "offset": 283616,
+      "onset": 8736
+    },
+    "eval_data/vad_audio/fleurs/en/en_1733.wav": {
+      "n_samples": 209280,
+      "offset": 204768,
+      "onset": 1568
+    },
+    "eval_data/vad_audio/fleurs/en/en_1738.wav": {
+      "n_samples": 132480,
+      "offset": 113120,
+      "onset": 23072
+    },
+    "eval_data/vad_audio/fleurs/en/en_1762.wav": {
+      "n_samples": 136320,
+      "offset": 100320,
+      "onset": 19488
+    },
+    "eval_data/vad_audio/fleurs/en/en_1790.wav": {
+      "n_samples": 207360,
+      "offset": 197600,
+      "onset": 10784
+    },
+    "eval_data/vad_audio/fleurs/en/en_1793.wav": {
+      "n_samples": 132480,
+      "offset": 112096,
+      "onset": 10784
+    },
+    "eval_data/vad_audio/fleurs/en/en_1795.wav": {
+      "n_samples": 290880,
+      "offset": 272864,
+      "onset": 20512
+    },
+    "eval_data/vad_audio/fleurs/en/en_1801.wav": {
+      "n_samples": 209600,
+      "offset": 204768,
+      "onset": 21024
+    },
+    "eval_data/vad_audio/fleurs/en/en_1822.wav": {
+      "n_samples": 165120,
+      "offset": 158688,
+      "onset": 6176
+    },
+    "eval_data/vad_audio/fleurs/en/en_1836.wav": {
+      "n_samples": 218880,
+      "offset": 197600,
+      "onset": 6688
+    },
+    "eval_data/vad_audio/fleurs/en/en_1845.wav": {
+      "n_samples": 154880,
+      "offset": 141280,
+      "onset": 17952
+    },
+    "eval_data/vad_audio/fleurs/en/en_1853.wav": {
+      "n_samples": 92160,
+      "offset": 85472,
+      "onset": 3104
+    },
+    "eval_data/vad_audio/fleurs/en/en_1865.wav": {
+      "n_samples": 137280,
+      "offset": 131040,
+      "onset": 7712
+    },
+    "eval_data/vad_audio/fleurs/en/en_1876.wav": {
+      "n_samples": 177600,
+      "offset": 130528,
+      "onset": 37408
+    },
+    "eval_data/vad_audio/fleurs/en/en_1896.wav": {
+      "n_samples": 182400,
+      "offset": 174048,
+      "onset": 2592
+    },
+    "eval_data/vad_audio/fleurs/en/en_1906.wav": {
+      "n_samples": 101760,
+      "offset": 90080,
+      "onset": 11808
+    },
+    "eval_data/vad_audio/fleurs/en/en_1909.wav": {
+      "n_samples": 99840,
+      "offset": 93152,
+      "onset": 5664
+    },
+    "eval_data/vad_audio/fleurs/en/en_1911.wav": {
+      "n_samples": 237440,
+      "offset": 224736,
+      "onset": 10272
+    },
+    "eval_data/vad_audio/fleurs/en/en_1913.wav": {
+      "n_samples": 104640,
+      "offset": 97760,
+      "onset": 2592
+    },
+    "eval_data/vad_audio/fleurs/en/en_1924.wav": {
+      "n_samples": 207360,
+      "offset": 197600,
+      "onset": 20000
+    },
+    "eval_data/vad_audio/fleurs/en/en_1973.wav": {
+      "n_samples": 159360,
+      "offset": 151520,
+      "onset": 3616
+    },
+    "eval_data/vad_audio/fleurs/en/en_1986.wav": {
+      "n_samples": 138240,
+      "offset": 132064,
+      "onset": 2080
+    },
+    "eval_data/vad_audio/fleurs/en/en_1996.wav": {
+      "n_samples": 223680,
+      "offset": 186848,
+      "onset": 23584
+    },
+    "eval_data/vad_audio/fleurs/en/en_2004.wav": {
+      "n_samples": 111360,
+      "offset": 104928,
+      "onset": 5664
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1660.wav": {
+      "n_samples": 221760,
+      "offset": 198624,
+      "onset": 8736
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1675.wav": {
+      "n_samples": 175680,
+      "offset": 158688,
+      "onset": 18464
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1689.wav": {
+      "n_samples": 199680,
+      "offset": 187360,
+      "onset": 20000
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1692.wav": {
+      "n_samples": 144960,
+      "offset": 131552,
+      "onset": 17952
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1707.wav": {
+      "n_samples": 200640,
+      "offset": 179168,
+      "onset": 18976
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1715.wav": {
+      "n_samples": 361920,
+      "offset": 323040,
+      "onset": 17952
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1730.wav": {
+      "n_samples": 290880,
+      "offset": 277984,
+      "onset": 13856
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1743.wav": {
+      "n_samples": 355200,
+      "offset": 339424,
+      "onset": 14880
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1748.wav": {
+      "n_samples": 130560,
+      "offset": 113120,
+      "onset": 19488
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1772.wav": {
+      "n_samples": 111360,
+      "offset": 96736,
+      "onset": 20512
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1798.wav": {
+      "n_samples": 251520,
+      "offset": 237024,
+      "onset": 20000
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1804.wav": {
+      "n_samples": 211200,
+      "offset": 190432,
+      "onset": 6176
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1816.wav": {
+      "n_samples": 215040,
+      "offset": 200160,
+      "onset": 32288
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1822.wav": {
+      "n_samples": 334080,
+      "offset": 314336,
+      "onset": 11296
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1824.wav": {
+      "n_samples": 241920,
+      "offset": 228832,
+      "onset": 12320
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1835.wav": {
+      "n_samples": 233280,
+      "offset": 221664,
+      "onset": 25632
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1847.wav": {
+      "n_samples": 160320,
+      "offset": 148448,
+      "onset": 9248
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1854.wav": {
+      "n_samples": 123840,
+      "offset": 98784,
+      "onset": 4640
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1874.wav": {
+      "n_samples": 236160,
+      "offset": 210400,
+      "onset": 29216
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1898.wav": {
+      "n_samples": 280320,
+      "offset": 266208,
+      "onset": 16928
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1899.wav": {
+      "n_samples": 284160,
+      "offset": 274400,
+      "onset": 10784
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1922.wav": {
+      "n_samples": 203520,
+      "offset": 182240,
+      "onset": 20512
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1929.wav": {
+      "n_samples": 180480,
+      "offset": 160736,
+      "onset": 24096
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1931.wav": {
+      "n_samples": 228480,
+      "offset": 223712,
+      "onset": 13856
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1932.wav": {
+      "n_samples": 339840,
+      "offset": 316384,
+      "onset": 8736
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1946.wav": {
+      "n_samples": 344640,
+      "offset": 333280,
+      "onset": 19488
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1951.wav": {
+      "n_samples": 252480,
+      "offset": 232928,
+      "onset": 26144
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1961.wav": {
+      "n_samples": 298560,
+      "offset": 269792,
+      "onset": 20512
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_1969.wav": {
+      "n_samples": 230400,
+      "offset": 215008,
+      "onset": 25632
+    },
+    "eval_data/vad_audio/fleurs/vi/vi_2001.wav": {
+      "n_samples": 206400,
+      "offset": 185824,
+      "onset": 13344
+    }
+  },
+  "level_target_p99_peak": 0.35,
+  "params": {
+    "min_silence_duration_ms": 100,
+    "min_speech_duration_ms": 250,
+    "speech_pad_ms": 30,
+    "threshold": 0.5
+  },
+  "reference_vad": "silero-vad",
+  "version": "6.2.1"
+}

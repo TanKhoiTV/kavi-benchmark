@@ -548,6 +548,21 @@ slice is marginal, that's a cheap, legitimate signal to reconsider effort alloca
   *not* the archived script's custom RMS mix, so the historical "noisy 20.23%"
   ceiling stays comparable. Outcome feeds the register directly.
 
+### VAD noise benchmark (ADR-022) — status
+
+- **Scope:** host-side scoring of an energy VAD on constructed audio (two FLEURS
+  utterances per item, MUSAN noise, real RIRS impulse responses); method and
+  assumptions in [`docs/vad-benchmark.md`](../vad-benchmark.md), results in
+  [`docs/vad-results.md`](../vad-results.md).
+- **Make targets:** `vad-bounds`, `vad-manifest`, `vad-audit`, `vad-gold-audio`,
+  `vad-collar`, `vad-run`, `vad-smoke`, `vad-sweep`, `vad-sweep-smoke`,
+  `vad-manifest-40`, `vad-collar-sensitivity`, `vad-stage5`, `vad-decision`.
+- **Result (Case B):** no energy threshold and speech timeout in the grid passes in
+  every cell; only the quiet/clean cells pass. Table and command record:
+  `bench/results/vad/sweep_table.csv`, `bench/results/vad/sweep_record.md`.
+- **Open:** hand-labelled collar (Stage 3B) not performed; on-device confirmation
+  pending; model-based VAD follow-up. Outcome recorded in ADR-022.
+
 ---
 
 ## 9. Open questions / deferred decisions (→ [open-parameters register](../decisions/README.md#open-parameters))
@@ -564,6 +579,8 @@ slice is marginal, that's a cheap, legitimate signal to reconsider effort alloca
 - **Pre-ASR denoising gate — gate decision made (Wiener ADOPTED); full lean-slice
   eval still pending** — see `denoising-gate-results.md`; the on-device
   GTCRN-vs-Wiener pick (ADR-018) remains → android plan R1.
+- **VAD thresholds — closed by the host-side noise benchmark (Case B: model-based VAD
+  follow-up); collar and on-device confirmation pending** — see ADR-022.
 - **Architecture — decided in ADR-007/008/009/010** (Dual Zipformer ASR, Opus-MT
   MT, Supertonic Phase-1 TTS, sherpa-onnx + ORT, coroutines pipeline). **The register
   remains Draft** pending the Phase-4/5/7 gates.

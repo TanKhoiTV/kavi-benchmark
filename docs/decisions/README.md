@@ -35,8 +35,15 @@ shared, so a reference to "#7" means the same parameter on either side.
 | 6 | **MT beam width** (greedy vs beam=4) | ADR-020 (private record), measured here | **Needs a number:** Phase-5 on-device latency-vs-BLEU measurement. The host-side quality half is already citable in [`../reference/beam-sweep-host-aggregate.md`](../reference/beam-sweep-host-aggregate.md) and in the published results. *(TanKhoiTV/kavi-benchmark#115)* |
 
 Tracked privately (`kavi-android/docs/decisions/README.md`): **#2** on-device
-denoiser model (ADR-018) · **#4** VAD thresholds (ADR-022) · **#5** ASR
-thread-tuning build (ADR-012) · **#7** Opus-MT w8a16 vs w8a8 (ADR-003).
+denoiser model (ADR-018) · **#5** ASR thread-tuning build (ADR-012) · **#7**
+Opus-MT w8a16 vs w8a8 (ADR-003).
+
+> **Resolved and closed:** **#4 VAD thresholds** — the host-side noise benchmark
+> behind this repo's [`../reference/vad-results.md`](../reference/vad-results.md)
+> found no energy threshold and speech timeout that holds in noisy conditions, so
+> none is fixed and a model-based VAD is the follow-up. The record and its revision
+> note are private (ADR-022 in `kavi-android`); the collar was not hand-labelled and
+> on-device confirmation is still pending, so the resolution is host-side only.
 
 > **Resolved and closed:** **#8 QAIRT Community Edition access** — obtained;
 > SDK `2.31.0.250130` is installed and in use (ADR-030 records its licence terms).
