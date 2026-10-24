@@ -1,5 +1,5 @@
-# Ownership map for kavi-prototype (-> kavi-benchmark after the
-# re-organization; see #129).
+# Ownership map for kavi-benchmark (renamed from kavi-prototype in the
+# 2026-10 re-organisation; see #129).
 #
 # Deliberately a blanket line: with three members, per-area ownership would not
 # describe anything real yet. The practical effect is that GitHub auto-requests
