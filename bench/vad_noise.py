@@ -74,7 +74,7 @@ def mix_snr(
         # Preserve scale but note clipping; do not silently rescale output and claim same SNR
         pass
     # Measure after mix from aligned components
-    return mixed, float(measured_before), float(peak), float(clipping)
+    return mixed, float(measured_before), float(peak), clipping
 
 
 def measure_snr_from_components(speech: np.ndarray, noise: np.ndarray) -> float:

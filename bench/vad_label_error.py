@@ -14,6 +14,7 @@ import json
 import math
 import sys
 from pathlib import Path
+from typing import TypedDict
 
 import numpy as np
 
@@ -39,9 +40,15 @@ def nearest_rank(values: list[float], percentile: float) -> float:
     return float(ordered[rank - 1])
 
 
+class BoundaryErrors(TypedDict):
+    ids: list[str]
+    onset: list[float]
+    offset: list[float]
+
+
 def boundary_errors(
     reference: dict[str, Bounds], hand: dict[str, Bounds]
-) -> dict[str, list[float]]:
+) -> BoundaryErrors:
     ids = sorted(set(reference) & set(hand))
     return {
         "ids": ids,
@@ -171,7 +178,8 @@ def print_report(summary: dict, collar_s: float, findings: dict, n_clips: int) -
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    _summary = (__doc__ or "").strip().splitlines()
+    ap = argparse.ArgumentParser(description=_summary[0] if _summary else None)
     ap.add_argument("--labels", default=GOLD_LABELS)
     ap.add_argument("--audio-dir", default=GOLD_AUDIO_DIR)
     ap.add_argument("--gold-template", default=GOLD_TEMPLATE)

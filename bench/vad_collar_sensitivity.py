@@ -182,7 +182,8 @@ def print_report(
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    _summary = (__doc__ or "").strip().splitlines()
+    ap = argparse.ArgumentParser(description=_summary[0] if _summary else None)
     ap.add_argument("--manifest", default=DEFAULT_MANIFEST)
     ap.add_argument("--per-cell-per-lang", type=int, default=None)
     ap.add_argument("--thresholds", default=",".join(str(t) for t in THRESHOLD_GRID))

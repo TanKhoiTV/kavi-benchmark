@@ -19,7 +19,7 @@ from pathlib import Path
 import soundfile as sf
 
 from bench.vad_label_error import GOLD_AUDIO_DIR, GOLD_LABELS, GOLD_TEMPLATE
-from bench.vad_noise import SR, build_clip_audio, load_mono
+from bench.vad_noise import SR, TimelineAudio, build_clip_audio, load_mono
 
 CONDITION_ASSETS = {
     "quiet": ("steady", False),
@@ -57,7 +57,7 @@ def render_row(
     steady: list[Path],
     impulsive: list[Path],
     rirs: list[Path],
-) -> tuple[object, dict]:
+) -> tuple[TimelineAudio, dict]:
     kind, uses_rir = CONDITION_ASSETS[row["condition"]]
     snr = parse_snr(row["snr_db"])
     noise_path = None
@@ -83,7 +83,8 @@ def render_row(
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    _summary = (__doc__ or "").strip().splitlines()
+    ap = argparse.ArgumentParser(description=_summary[0] if _summary else None)
     ap.add_argument("--template", default=GOLD_TEMPLATE)
     ap.add_argument("--out-dir", default=GOLD_AUDIO_DIR)
     ap.add_argument("--labels", default=GOLD_LABELS)
@@ -103,8 +104,12 @@ def main(argv: list[str] | None = None) -> int:
         print("real MUSAN / RIRS assets missing", file=sys.stderr)
         return 1
 
-    with open(args.template, encoding="utf-8", newline="") as f:
-        rows = list(csv.DictReader(f))
+    try:
+        with open(args.template, encoding="utf-8", newline="") as f:
+            rows = list(csv.DictReader(f))
+    except OSError as exc:
+        print(f"cannot read {args.template}: {exc}", file=sys.stderr)
+        return 1
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -112,7 +117,11 @@ def main(argv: list[str] | None = None) -> int:
     for k, row in enumerate(rows):
         built, info = render_row(row, k, steady, impulsive, rirs)
         wav = out_dir / f"{row['id']}.wav"
-        sf.write(str(wav), built.audio, SR)
+        try:
+            sf.write(str(wav), built.audio, SR)
+        except (OSError, RuntimeError) as exc:
+            print(f"cannot write {wav}: {exc}", file=sys.stderr)
+            return 1
         info["wav"] = wav.as_posix()
         meta[row["id"]] = info
     (out_dir / "render_meta.json").write_text(
@@ -123,13 +132,23 @@ def main(argv: list[str] | None = None) -> int:
     if labels.exists():
         print(f"{labels} exists; left untouched")
     else:
-        with open(labels, "w", encoding="utf-8", newline="") as f:
-            w = csv.writer(f, lineterminator="\n")
-            w.writerow(["id", "audio_path", "onset_s", "offset_s", "annotator"])
-            for row in rows:
-                w.writerow(
-                    [row["id"], (out_dir / f"{row['id']}.wav").as_posix(), "", "", ""]
-                )
+        try:
+            with open(labels, "w", encoding="utf-8", newline="") as f:
+                w = csv.writer(f, lineterminator="\n")
+                w.writerow(["id", "audio_path", "onset_s", "offset_s", "annotator"])
+                for row in rows:
+                    w.writerow(
+                        [
+                            row["id"],
+                            (out_dir / f"{row['id']}.wav").as_posix(),
+                            "",
+                            "",
+                            "",
+                        ]
+                    )
+        except OSError as exc:
+            print(f"cannot write {labels}: {exc}", file=sys.stderr)
+            return 1
         print(f"wrote blank {labels}")
     print(f"rendered {len(rows)} clips to {out_dir}")
     return 0

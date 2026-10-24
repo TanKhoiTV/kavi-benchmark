@@ -248,8 +248,11 @@ def test_builder_ground_truth_uses_reference_bounds(tmp_path, monkeypatch) -> No
     manifest = build_vad_manifest(out_path=str(tmp_path / "m.json"))
     assert len(manifest.items) == 800
     for item in manifest.items:
-        a = bounds[item.clean_audio_path]
-        b = bounds[item.speech_b_path]
+        a = bounds[Path(item.clean_audio_path).as_posix()]
+        assert item.speech_b_path is not None
+        b = bounds[Path(item.speech_b_path).as_posix()]
+        assert item.speech_a_bounds is not None
+        assert item.speech_b_bounds is not None
         assert tuple(item.speech_a_bounds) == a
         assert tuple(item.speech_b_bounds) == b
         a_len, b_len = a[1] - a[0], b[1] - b[0]

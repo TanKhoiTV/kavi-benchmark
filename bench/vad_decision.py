@@ -253,7 +253,8 @@ def print_report(rows, summaries, thresholds, timeouts, collar_s, label_error_s)
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    _summary = (__doc__ or "").strip().splitlines()
+    ap = argparse.ArgumentParser(description=_summary[0] if _summary else None)
     ap.add_argument("--manifest", default=DEFAULT_MANIFEST)
     ap.add_argument("--collar-file", default=COLLAR_PATH)
     ap.add_argument("--label-error-ms", type=float, default=None)
@@ -271,8 +272,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1  # fmt: skip
         collar_s, partial, data = 0.150, True, {}
     else:
-        data = json.loads(p.read_text(encoding="utf-8"))
-        collar_s, partial = float(data["collar_s"]), bool(data.get("partial", False))
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+            collar_s = float(data["collar_s"])
+        except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+            print(f"cannot read {args.collar_file}: {exc}", file=sys.stderr)
+            return 1
+        partial = bool(data.get("partial", False))
     if partial and not args.allow_provisional:
         print(f"{args.collar_file} is partial; not a Stage 3B collar", file=sys.stderr)
         return 1

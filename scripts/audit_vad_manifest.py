@@ -53,8 +53,10 @@ def audit_manifest(path: str, per_cell_per_lang: int = PER_CELL_PER_LANG) -> dic
             if it.noise_type != "clean" or it.noise_path or it.rir_path:
                 problems.append(f"{it.id}: clean item must have no noise and no RIR")
         else:
-            if it.noise_type != noise_type or f"/musan/{noise_type}/" not in str(
-                it.noise_path
+            noise_posix = Path(it.noise_path).as_posix() if it.noise_path else ""
+            if (
+                it.noise_type != noise_type
+                or f"/musan/{noise_type}/" not in noise_posix
             ):
                 problems.append(f"{it.id}: wrong noise ({it.noise_type})")
             elif not Path(it.noise_path).exists():
@@ -62,7 +64,8 @@ def audit_manifest(path: str, per_cell_per_lang: int = PER_CELL_PER_LANG) -> dic
             if uses_rir != bool(it.rir_path):
                 problems.append(f"{it.id}: RIR presence wrong")
             elif it.rir_path and (
-                "/rirs/" not in it.rir_path or not Path(it.rir_path).exists()
+                "/rirs/" not in Path(it.rir_path).as_posix()
+                or not Path(it.rir_path).exists()
             ):
                 problems.append(f"{it.id}: RIR path wrong or missing")
 
@@ -144,7 +147,8 @@ def audit_gold(path: str) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    _summary = (__doc__ or "").strip().splitlines()
+    ap = argparse.ArgumentParser(description=_summary[0] if _summary else None)
     ap.add_argument("--manifest", default="eval_data/vad_manifest_v2.json")
     ap.add_argument("--gold", default="eval_data/vad_gold_template.csv")
     ap.add_argument("--per-cell-per-lang", type=int, default=PER_CELL_PER_LANG)

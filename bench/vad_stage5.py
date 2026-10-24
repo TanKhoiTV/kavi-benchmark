@@ -200,7 +200,8 @@ def write_record(path: str, info: dict) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    _summary = (__doc__ or "").strip().splitlines()
+    ap = argparse.ArgumentParser(description=_summary[0] if _summary else None)
     ap.add_argument("--manifest", default=DEFAULT_MANIFEST)
     ap.add_argument("--collar-file", default=COLLAR_PATH)
     ap.add_argument("--table", default=TABLE_PATH)

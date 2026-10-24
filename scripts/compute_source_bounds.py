@@ -21,7 +21,8 @@ from bench.vad_reference import (
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    _summary = (__doc__ or "").strip().splitlines()
+    ap = argparse.ArgumentParser(description=_summary[0] if _summary else None)
     ap.add_argument("--audio-root", default="eval_data/vad_audio/fleurs")
     ap.add_argument("--out", default=SOURCE_BOUNDS_PATH)
     args = ap.parse_args(argv)

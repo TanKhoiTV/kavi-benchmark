@@ -385,7 +385,8 @@ def print_report(
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    _summary = (__doc__ or "").strip().splitlines()
+    ap = argparse.ArgumentParser(description=_summary[0] if _summary else None)
     ap.add_argument("--manifest", default=DEFAULT_MANIFEST)
     ap.add_argument("--threshold", type=float, default=DEFAULT_ENERGY_THRESHOLD)
     ap.add_argument("--timeout-ms", type=int, default=DEFAULT_SPEECH_TIMEOUT_MS)
