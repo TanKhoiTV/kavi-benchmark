@@ -59,7 +59,7 @@ Decided order: **MT fine-tune first** (punctuation and domain, 5-20 T4-h, ships 
 
 1. **Measure the whole chain in one run** (ASR → MT → TTS, one clock, logs kept). Everything else in the submission depends on this number being a measurement rather than a sum.
 2. **The 30-minute scenario** and an **installable package** — both mandatory, neither exists.
-3. **MT fine-tune data plan** — corpus mix, held-out domain eval set, punctuation objective.
+3. **MT fine-tune data plan** — **written**: [`docs/reference/mt-finetune-data-plan.md`](docs/reference/mt-finetune-data-plan.md). Its 100-item baseline withdrew the punctuation objective (the model already punctuates above the gold rate) and found verbosity and a ~400-pair authored eval set as the real requirements. Executing it is now data work, not planning.
 4. **ADR-029 ruling on Emilia-derived ZipVoice weights** before any TTS training starts.
 5. AI Hub: compile for 8 Gen 3 (v75), audit offload %, run `numerics` on the MT decoder.
 6. Config follow-through: TTS thread count, and pinning the sherpa-onnx AAR behind a fetch script.
@@ -77,6 +77,7 @@ Decided order: **MT fine-tune first** (punctuation and domain, 5-20 T4-h, ships 
 | What does the submission have to contain, and by when? | `docs/reference/phase3-submission-requirements.md` |
 | Why can't the VAD timeout change? | `docs/reference/pause-distribution.md` |
 | Can training help, and in what order? | `docs/reference/training-feasibility.md` |
+| What should the MT fine-tune train on, and how is it judged? | `docs/reference/mt-finetune-data-plan.md` |
 | Is AI Hub worth using after all? | `docs/reference/aihub-capability-review.md` |
 | What do users of shipping apps actually punish? | `docs/reference/translation-ux.md` |
 | How does this compare with competitors and the literature? | `docs/reference/competitive-context.md` |
