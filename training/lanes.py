@@ -54,6 +54,24 @@ LANES: dict[str, dict] = {
         "epochs": 1,
         "note": "text_target fix on the contract mix, one epoch",
     },
+    # The ladder that matters now: the tokenizer fix is in every lane, so these
+    # vary only what is still open. pc2 adds the target-brevity cap (mix mean
+    # 10.59 -> 9.76 against a gold 8.46) on top of the punctuation contract.
+    "pc2-lr1e5-e1": {
+        "lr": 1e-5,
+        "epochs": 1,
+        "note": "contract + brevity, conservative LR, one epoch",
+    },
+    "pc2-lr3e5-e1": {
+        "lr": 3e-5,
+        "epochs": 1,
+        "note": "contract + brevity at the conventional adaptation rate",
+    },
+    "pc2-lr1e5-e3": {
+        "lr": 1e-5,
+        "epochs": 3,
+        "note": "does more exposure fit the domain or forget FLEURS",
+    },
     # Learning-rate bracket around the baseline.
     "mix-lr1e5-e3": {
         "lr": 1e-5,
