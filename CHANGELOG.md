@@ -19,6 +19,7 @@
 - **qnn:** Use repo-root-relative paths in calibration input lists (#85)
 - **changelog:** Stop duplicating the PR link in generated entries([#127](https://github.com/TanKhoiTV/kavi-benchmark/pull/127))
 - **bench:** Fail with a message when a --dim value is not an integer
+- **training:** Authenticate with API tokens and read the real quota
 
 ### Documentation
 
