@@ -172,7 +172,15 @@ def run_cli(
         print("   [dry-run]", " ".join(cmd), f"(token for {account['name']})")
         return subprocess.CompletedProcess(cmd, 0, "", "")
     return subprocess.run(
-        cmd, env=account_env(account), text=True, capture_output=True, check=False
+        cmd,
+        env=account_env(account),
+        text=True,
+        # The CLI draws Unicode progress bars; on Windows the default cp932 decoder
+        # kills the reader thread with UnicodeDecodeError before we see the result.
+        encoding="utf-8",
+        errors="replace",
+        capture_output=True,
+        check=False,
     )
 
 
@@ -265,11 +273,15 @@ def stage_dataset() -> Path:
     meta = {
         "title": DATASET_TITLE,
         "id": None,  # filled per account at upload
-        "licenses": [{"name": "CC0-1.0"}, {"name": "CC-BY-2.0"}],
+        # Kaggle accepts exactly one license per dataset (it rejects a list of
+        # two), so the field carries the most restrictive term present and the
+        # description enumerates the rest per source.
+        "licenses": [{"name": "CC-BY-4.0"}],
         "description": (
-            "Offline VI-EN MT fine-tune inputs: Opus-MT vi-en base checkpoint "
-            "(CC BY 4.0), ParaCrawl-Bonus vi-en (CC0), Tatoeba vi-en (CC BY 2.0 FR), "
-            "KDE4 strings (GPL text). No organizer corpus is included."
+            "Offline VI-EN MT fine-tune inputs. Per source: Opus-MT vi-en base "
+            "checkpoint (CC BY 4.0), ParaCrawl-Bonus vi-en v9 (CC0 1.0), Tatoeba "
+            "vi-en v2026-07-08 (CC BY 2.0 FR), KDE4 strings v2 (GPL text, model "
+            "not a derivative). No organizer corpus is included."
         ),
     }
     (stage / "dataset-metadata.json").write_text(
@@ -309,9 +321,18 @@ def notebook_for(lane: str, account: dict) -> str:
     cfg = LANES[lane]
     argv_literal = json.dumps(json.dumps(train_argv(lane)))
     lines = [
-        "import json, os, subprocess, sys, time",
+        "import glob, json, os, subprocess, sys, time",
         "t0 = time.time()",
-        "DS = '/kaggle/input/" + DATASET_SLUG + "'",
+        # Locate our own code file rather than assuming a mount path. Kaggle
+        # mounts datasets at /kaggle/input/datasets/<owner>/<slug>, not
+        # /kaggle/input/<slug>, and that layout is not part of any contract we
+        # control - so find training/finetune_marian.py and use its grandparent.
+        "HITS = sorted(glob.glob('/kaggle/input/**/finetune_marian.py', recursive=True))",
+        "DS = os.path.dirname(os.path.dirname(HITS[0])) if HITS else None",
+        "if DS is None:",
+        "    seen = sorted(glob.glob('/kaggle/input/**/', recursive=True))[:12]",
+        "    raise SystemExit('dataset not mounted; /kaggle/input holds: ' + str(seen))",
+        "print('dataset root:', DS, flush=True)",
         "os.chdir(DS)",
         "sys.path.insert(0, DS)",
         "ARGS = json.loads(" + argv_literal + ")",
@@ -397,6 +418,41 @@ def cmd_check(args: argparse.Namespace) -> int:
     return 0
 
 
+def push_dataset(account: dict, stage: Path, dry: bool) -> tuple[bool, str]:
+    """Create the dataset, or add a version when one already exists remotely.
+
+    Judged on the exit code and the returned message rather than on the ledger:
+    an earlier version recorded the dataset before the upload succeeded, so a
+    failed create left the ledger claiming a dataset that did not exist and the
+    next run tried to version it (403).
+    """
+    result = run_cli(
+        account, "datasets", "create", "-p", str(stage), "--dir-mode", "zip", dry=dry
+    )
+    if result.returncode == 0:
+        return True, "created"
+    blob = ((result.stdout or "") + (result.stderr or "")).lower()
+    if "already exist" in blob or "409" in blob:
+        result = run_cli(
+            account,
+            "datasets",
+            "version",
+            "-p",
+            str(stage),
+            "-m",
+            "lane sweep inputs",
+            dry=dry,
+        )
+        if result.returncode == 0:
+            return True, "new version"
+        tail = ((result.stdout or "") + (result.stderr or "")).strip().splitlines()
+        return False, tail[-1][:120] if tail else "version failed"
+    tail = ((result.stdout or "") + (result.stderr or "")).strip().splitlines()
+    return False, tail[-1][
+        :120
+    ] if tail else f"create failed (exit {result.returncode})"
+
+
 def cmd_dataset(args: argparse.Namespace) -> int:
     accounts = read_accounts()
     targets = select(accounts, args.accounts)
@@ -413,31 +469,22 @@ def cmd_dataset(args: argparse.Namespace) -> int:
         meta["id"] = acct["username"] + "/" + DATASET_SLUG
         meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
         existing = ledger["dataset"].get(acct["name"])
-        suffix = " (new version)" if existing else ""
-        print(f"{acct['name']}: dataset {meta['id']}{suffix}")
-        if existing:
+        if args.dry_run:
             kaggle(
                 acct,
                 "datasets",
-                "version",
+                "version" if existing else "create",
                 "-p",
                 str(stage),
-                "-m",
-                "lane sweep inputs",
-                dry=args.dry_run,
+                dry=True,
             )
+            continue
+        ok, how = push_dataset(acct, stage, dry=False)
+        print(f"{acct['name']}: dataset {meta['id']} -> {how}")
+        if ok:
+            ledger["dataset"][acct["name"]] = meta["id"]
         else:
-            kaggle(
-                acct,
-                "datasets",
-                "create",
-                "-p",
-                str(stage),
-                "--dir-mode",
-                "zip",
-                dry=args.dry_run,
-            )
-        ledger["dataset"][acct["name"]] = meta["id"]
+            print(f"{acct['name']}: upload failed; not recorded in the ledger")
     save_ledger(ledger)
     return 0
 
@@ -459,6 +506,18 @@ def cmd_run(args: argparse.Namespace) -> int:
     if not targets:
         raise SystemExit(
             f"wave {args.wave} is past the end of the schedule for these accounts"
+        )
+
+    # A lane is pushed at most once unless --force: the split re-balances when a
+    # new account arrives, which would otherwise re-run lanes already trained and
+    # spend quota on a duplicate.
+    skipped = [lane for _, lane in targets if lane in ledger["runs"] and not args.force]
+    if skipped:
+        print(f"already pushed, skipping: {', '.join(skipped)} (pass --force to redo)")
+        targets = [(acct, lane) for acct, lane in targets if lane not in skipped]
+    if not targets:
+        raise SystemExit(
+            f"nothing to push for wave {args.wave}: every lane is already in the ledger"
         )
 
     for acct, lane in targets:
@@ -628,6 +687,11 @@ def main() -> int:
     )
     run.add_argument(
         "--lane", default=None, help="push one named lane instead of a wave"
+    )
+    run.add_argument(
+        "--force",
+        action="store_true",
+        help="re-push a lane that is already in the ledger",
     )
     run.set_defaults(fn=cmd_run)
 
