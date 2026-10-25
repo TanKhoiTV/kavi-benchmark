@@ -346,6 +346,12 @@ def main() -> int:
         help="drop pairs whose English side is longer than this multiple of the source",
     )
     ap.add_argument(
+        "--max-target-words",
+        type=int,
+        default=14,
+        help="drop pairs whose English side exceeds this many words (gold mean 8.46, p95 15)",
+    )
+    ap.add_argument(
         "--keep-source-punct",
         type=float,
         default=0.4,
@@ -386,6 +392,13 @@ def main() -> int:
                 continue
             if len(en.split()) > args.max_target_source_ratio * len(vi.split()):
                 drop("target_too_long")
+                continue
+            # Brevity is a training target, not a gate applied after the fact: the
+            # first corrected lane emitted 16.66 words against a gold 8.46, which
+            # is what a corpus averaging 10.59 teaches. The cap is the measured
+            # lever for the single largest remaining gap.
+            if len(en.split()) > args.max_target_words:
+                drop("target_over_target_words")
                 continue
             if args.lowercase_source:
                 vi = vi.lower()
@@ -474,32 +487,39 @@ def main() -> int:
         picked: list[tuple[str, str]] = []
         have_c = have_q = 0
 
-        def take(cell: str, k: int, *, adds_comma: bool, adds_q: bool) -> None:
+        def take(cell: str, k: int, *, adds_comma: bool, adds_q: bool) -> int:
             nonlocal have_c, have_q
             k = min(k, len(cells[cell]), n - len(picked))
             if k <= 0:
-                return
+                return 0
             chunk = cells[cell][:k]
             del cells[cell][:k]
             picked.extend(chunk)
             have_c += k if adds_comma else 0
             have_q += k if adds_q else 0
+            return k
 
-        # Both first, then whichever marginal is further behind, then the rest.
+        # Both first, then whichever marginal is further behind, then plain.
         while len(picked) < n:
             short_c = max(0, want_c - have_c)
             short_q = max(0, want_q - have_q)
+            took = 0
             if short_c and short_q:
-                take("both", min(short_c, short_q), adds_comma=True, adds_q=True)
-            elif short_c:
-                take("comma", short_c, adds_comma=True, adds_q=False)
-            elif short_q:
-                take("question", short_q, adds_comma=False, adds_q=True)
-            else:
-                take("plain", n - len(picked), adds_comma=False, adds_q=False)
-            # A cell ran dry: fall through to whatever remains next iteration.
-            if not any(cells.values()):
-                break
+                took = take("both", min(short_c, short_q), adds_comma=True, adds_q=True)
+            if not took and short_c:
+                took = take("comma", short_c, adds_comma=True, adds_q=False)
+                if not took:
+                    # The pool cannot supply that many comma rows at this target
+                    # length; stop asking rather than starve the whole slice.
+                    have_c = want_c
+            if not took and short_q:
+                took = take("question", short_q, adds_comma=False, adds_q=True)
+                if not took:
+                    have_q = want_q
+            if not took and not take(
+                "plain", n - len(picked), adds_comma=False, adds_q=False
+            ):
+                break  # every cell is empty: the slice cannot reach n
         rng.shuffle(picked)
         return picked
 
@@ -509,11 +529,19 @@ def main() -> int:
     need_c = max(0, (int(n_all * args.comma_target) - reg_comma) / max(1, len(general)))
     need_q = max(0, (int(n_all * args.question_target) - reg_q) / max(1, len(general)))
     general = draw(len(general), min(1.0, need_c), min(1.0, need_q))
+    if not general:
+        raise SystemExit("the general slice drew no pairs; relax the contract filters")
     mixture = register + general
     rng.shuffle(mixture)
     write("train_mix.tsv", mixture)
     mix_comma = sum(1 for p in mixture if is_c(p)) / max(1, len(mixture))
     mix_q = sum(1 for p in mixture if is_q(p)) / max(1, len(mixture))
+    if abs(mix_comma - args.comma_target) > 0.05 or abs(mix_q - args.question_target) > 0.10:
+        print(
+            f"note: mixture landed at comma {mix_comma:.1%} / question {mix_q:.1%} "
+            f"against targets {args.comma_target:.0%} / {args.question_target:.0%}; "
+            "the filtered pool could not supply the oversampling",
+        )
 
     def stats(rows: list[tuple[str, str]]) -> dict[str, float | int]:
         n = max(1, len(rows))
@@ -536,7 +564,9 @@ def main() -> int:
         "train_general": stats(general),
         "dev": stats(dev),
     }
-    print("\nEnglish-side profile (gold: 100% terminal, 42% comma, 35% question, 8.46 words):")
+    print(
+        "\nEnglish-side profile (gold: 100% terminal, 42% comma, 35% question, 8.46 words):"
+    )
     for label, row in profile.items():
         print(
             f"  {label:16s} n={row['n']:>7,}  mean {row['mean_en_words']:5.2f}  "
@@ -565,6 +595,7 @@ def main() -> int:
         "punctuation_contract": {
             "require_target_terminal": args.require_target_terminal,
             "max_target_source_ratio": args.max_target_source_ratio,
+            "max_target_words": args.max_target_words,
             "lowercase_source": args.lowercase_source,
             "keep_source_punct": args.keep_source_punct,
             "dropped": dropped,

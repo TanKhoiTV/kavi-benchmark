@@ -22,6 +22,7 @@ import argparse
 import json
 import math
 import os
+import shutil
 import time
 from pathlib import Path
 
@@ -134,6 +135,11 @@ def main() -> int:
         help="upsample-weight short targets: weight=(median_len/len)^alpha, clipped [0.5,2]; 0 = off",
     )
     ap.add_argument("--save-every", type=int, default=500)
+    ap.add_argument(
+        "--keep-steps",
+        action="store_true",
+        help="keep every step-* checkpoint in the output (default: prune after final)",
+    )
     ap.add_argument("--eval-every", type=int, default=500)
     ap.add_argument(
         "--max-hours", type=float, default=10.0, help="stop before the session cap"
@@ -360,6 +366,15 @@ def main() -> int:
             )
         )
         print(f"done at step {step}/{total}; wrote {final}", flush=True)
+        # The session output is what gets pulled back, and a step-* checkpoint
+        # carries optimizer state: 824 MB against 289 MB for the model alone, so
+        # six of them made every pull 5.1 GB and 15+ minutes around a 5-minute
+        # lane. Resume only ever needs the newest one inside a session, so the
+        # history is pruned once training completes.
+        if not args.keep_steps:
+            for old in sorted(out.glob("step-*")):
+                shutil.rmtree(old, ignore_errors=True)
+            print(f"pruned step-* checkpoints under {out}", flush=True)
     if ddp:
         torch.distributed.destroy_process_group()
     return 0
