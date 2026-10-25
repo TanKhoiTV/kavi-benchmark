@@ -15,6 +15,7 @@ This repository is the **host-side track**: the benchmark harness, the eval sets
 - `reference/denoising-gate-results.md` — the host-side Wiener gate. This is the measurement ADR-018 points at; it stays public because it was measured here.
 - `reference/beam-sweep-host-aggregate.md` — the citable reduction of the host beam sweep behind open parameter #6 (MT beam width).
 - `reference/vad-benchmark.md` — how the VAD noise benchmark was built and scored (constructed audio, MUSAN noise, RIRS impulse responses, energy VAD, collar, borderline rule, commands, known limits).
+- `reference/pause-distribution.md` — measured intra-utterance pauses behind `vad_speech_timeout_ms`: 300 ms is unsafe, 500 ms already truncates 2-3% of Vietnamese utterances, and neither can simply be moved.
 - `reference/vad-results.md` — what the VAD benchmark measured and what it did not. This is the measurement behind ADR-022's revision note (the record itself is private in `kavi-android`); raw table and command record under `bench/results/vad/`.
 
 ## Cold reference — historical
