@@ -104,6 +104,7 @@
 - **bench:** Derive AI Hub input specs from the ONNX graph
 - **bench:** Justify vad_speech_timeout_ms from measured pause distributions
 - **bench:** Test whether a text gate can replace the silence timeout
+- **training:** Set up the MT fine-tune lanes across four Kaggle accounts
 
 ### Miscellaneous
 
