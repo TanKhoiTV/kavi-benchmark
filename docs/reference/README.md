@@ -8,6 +8,7 @@ These are **no longer current** but are kept for the content they still contribu
 | `benchmarking-todo.md` | The v0 harness execution checklist (implemented) | Historical checklist; the on-device rows now point at `kavi-android` |
 | `denoising-gate-results.md` | One-off host-side gate result | Wiener-adoption evidence for the on-device denoiser record (ADR-018) |
 | `beam-sweep-host-aggregate.md` | Citable reduction of the host beam sweep (raw output is gitignored) | Quality-vs-latency evidence for open parameter #6 (MT beam width) |
+| `aihub-capability-review.md` | Second look at Qualcomm AI Hub after the earlier dismissal | Why AI Hub is still not a latency budget line but is a portability and quantization-QA lab, and the four cheap actions it enables before 13/11 |
 | `training-feasibility.md` | What a free-compute budget (Kaggle T4x2, Colab, rented hours) can actually train | Which candidates fit the Phase-3 window, the VITS-is-1-NFE correction, and why MT punctuation is a latency lever; §7-8 give the three-account arithmetic and the lane plan |
 | `phase3-submission-requirements.md` | Phase-3 brief and submission template read for operative requirements | Deadline, scoring pillars, mandatory items, and the gaps they expose |
 | `translation-ux.md` | Review corpus of shipping translation apps, read for what users actually punish | The UX levers that cost no model budget, and the argument for recovering quality after the gate instead of before it |
