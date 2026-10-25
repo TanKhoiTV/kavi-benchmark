@@ -15,6 +15,7 @@ This repository is the **host-side track**: the benchmark harness, the eval sets
 - `reference/denoising-gate-results.md` — the host-side Wiener gate. This is the measurement ADR-018 points at; it stays public because it was measured here.
 - `reference/beam-sweep-host-aggregate.md` — the citable reduction of the host beam sweep behind open parameter #6 (MT beam width).
 - `reference/vad-benchmark.md` — how the VAD noise benchmark was built and scored (constructed audio, MUSAN noise, RIRS impulse responses, energy VAD, collar, borderline rule, commands, known limits).
+- `reference/translation-ux.md` — what users of shipping translation apps complain about, and the levers that do not cost model budget. Includes the case for doing expensive re-translation *after* first audio.
 - `reference/endpointing-gate.md` — whether a text gate can replace the silence timeout. It cannot at this data scale, and the page corrects an earlier mis-framing of a turn split as content loss.
 - `reference/competitive-context.md` — how this design compares with RTranslator and with the simultaneous-translation and endpointing literature; records the gaps that comparison exposed.
 - `reference/pause-distribution.md` — measured intra-utterance pauses behind `vad_speech_timeout_ms`: 300 ms is unsafe, 500 ms already truncates 2-3% of Vietnamese utterances, and neither can simply be moved.
