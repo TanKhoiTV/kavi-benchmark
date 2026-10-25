@@ -49,6 +49,14 @@ REG_MIN_WORDS = 3
 REG_MAX_VI = 14
 REG_MAX_EN = 18
 
+# Punctuation contract (mt-finetune-data-plan §2.2). The first lane taught the
+# model to stop punctuating because the corpus did: train_general carried a
+# terminal mark on only 55.3% of its English rows against 100% in the supplied
+# gold, and the fine-tune emitted terminal marks at 65% - tracking the corpus,
+# not the references. Targets must be punctuated, and the source must look like
+# the ASR output that feeds MT at run time: lowercase, usually unpunctuated.
+TERMINAL = (".", "?", "!")
+
 # Boilerplate and misalignment markers. Web crawl and software strings both
 # survive a length filter looking like prose; these are what they look like.
 BOILERPLATE = ("●", "•", "…", "©", "®", "™", "http", "www.", "&nbsp;")
@@ -270,6 +278,16 @@ def strip_label(text: str) -> str:
     return LABEL.sub("", text).strip()
 
 
+def strip_source_punct(text: str) -> str:
+    """Drop punctuation from the source side only.
+
+    ASR emits unpunctuated text, so punctuated training source teaches the model
+    to expect cues that never arrive. Target punctuation stays: it is what the
+    clause cutter keys on and what the ship gate measures.
+    """
+    return SPACES.sub(" ", re.sub(r"[.,;:!?…]", " ", text)).strip()
+
+
 def register_score(vi: str, en: str) -> int:
     low_vi, low_en = vi.lower(), en.lower()
     score = sum(1 for c in VI_CUES if c in low_vi) + sum(
@@ -315,6 +333,30 @@ def main() -> int:
         default=0.32,
         help="fraction of train_mix.tsv that is a question (gold: 0.35)",
     )
+    ap.add_argument(
+        "--require-target-terminal",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="drop pairs whose English side has no . ? ! (gold is 100% punctuated)",
+    )
+    ap.add_argument(
+        "--max-target-source-ratio",
+        type=float,
+        default=1.5,
+        help="drop pairs whose English side is longer than this multiple of the source",
+    )
+    ap.add_argument(
+        "--keep-source-punct",
+        type=float,
+        default=0.4,
+        help="fraction of rows that keep source punctuation; punctuation/case dropout",
+    )
+    ap.add_argument(
+        "--lowercase-source",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="lowercase the source side to match ASR output",
+    )
     args = ap.parse_args()
 
     raw, out = Path(args.raw_dir), Path(args.out)
@@ -323,6 +365,11 @@ def main() -> int:
 
     pool: list[tuple[str, str, str]] = []  # (vi, en, source)
     counts: dict[str, dict[str, int | str]] = {}
+    dropped: dict[str, int] = {}
+
+    def drop(reason: str) -> None:
+        dropped[reason] = dropped.get(reason, 0) + 1
+
     for key, name, version, licence in SOURCES:
         pairs = load_pairs(raw, key)
         kept = 0
@@ -330,6 +377,22 @@ def main() -> int:
             vi, en = clean(vi), clean(en)
             vi, en = strip_label(vi), strip_label(en)
             if not vi or not en or not acceptable(vi, en):
+                drop("length_or_junk")
+                continue
+            # The punctuation contract, applied to every output so train, dev
+            # and inference share one convention.
+            if args.require_target_terminal and not en.rstrip().endswith(TERMINAL):
+                drop("target_unpunctuated")
+                continue
+            if len(en.split()) > args.max_target_source_ratio * len(vi.split()):
+                drop("target_too_long")
+                continue
+            if args.lowercase_source:
+                vi = vi.lower()
+            if rng.random() >= args.keep_source_punct:
+                vi = strip_source_punct(vi)
+            if not vi:
+                drop("source_empty_after_strip")
                 continue
             pool.append((vi, en, name))
             kept += 1
@@ -342,6 +405,9 @@ def main() -> int:
         print(f"{name:16s} read {len(pairs):>9,}  kept {kept:>9,}  ({licence})")
 
     print(f"\npool after length/ratio/diacritic filters: {len(pool):,}")
+    print("dropped by the punctuation contract:")
+    for reason, n in sorted(dropped.items(), key=lambda kv: -kv[1]):
+        print(f"  {reason:26s} {n:>10,}")
     pool = [(vi, en, s) for vi, en, s in pool]
     uniq = dedupe([(vi, en) for vi, en, _ in pool])
     print(f"after dedupe: {len(uniq):,}")
@@ -449,6 +515,35 @@ def main() -> int:
     mix_comma = sum(1 for p in mixture if is_c(p)) / max(1, len(mixture))
     mix_q = sum(1 for p in mixture if is_q(p)) / max(1, len(mixture))
 
+    def stats(rows: list[tuple[str, str]]) -> dict[str, float | int]:
+        n = max(1, len(rows))
+        words = [len(en.split()) for _, en in rows]
+        return {
+            "n": len(rows),
+            "mean_en_words": round(sum(words) / n, 2),
+            "terminal_rate": round(
+                sum(1 for _, en in rows if en.rstrip().endswith(TERMINAL)) / n, 3
+            ),
+            "comma_rate": round(sum(1 for _, en in rows if "," in en) / n, 3),
+            "question_rate": round(
+                sum(1 for _, en in rows if en.rstrip().endswith("?")) / n, 3
+            ),
+        }
+
+    profile = {
+        "train_mix": stats(mixture),
+        "train_register": stats(register),
+        "train_general": stats(general),
+        "dev": stats(dev),
+    }
+    print("\nEnglish-side profile (gold: 100% terminal, 42% comma, 35% question, 8.46 words):")
+    for label, row in profile.items():
+        print(
+            f"  {label:16s} n={row['n']:>7,}  mean {row['mean_en_words']:5.2f}  "
+            f"terminal {row['terminal_rate']:6.1%}  comma {row['comma_rate']:6.1%}  "
+            f"question {row['question_rate']:6.1%}"
+        )
+
     manifest = {
         "sources": counts,
         "filters": {
@@ -467,6 +562,14 @@ def main() -> int:
             "train_mix_comma_rate": round(mix_comma, 3),
             "train_mix_question_rate": round(mix_q, 3),
         },
+        "punctuation_contract": {
+            "require_target_terminal": args.require_target_terminal,
+            "max_target_source_ratio": args.max_target_source_ratio,
+            "lowercase_source": args.lowercase_source,
+            "keep_source_punct": args.keep_source_punct,
+            "dropped": dropped,
+        },
+        "profile": profile,
         "not_included": {
             "tier_b_wikimatrix": "CC BY-SA 4.0 - waits on the share-alike ruling",
             "tier_c_authored": "written by hand, not machine-drafted",

@@ -35,6 +35,17 @@ LANES: dict[str, dict] = {
         "epochs": 1,
         "note": "one epoch is often enough for domain shifts",
     },
+    # The punctuation-contract lane. The corpus was rebuilt so every English
+    # target carries a terminal mark and the source matches ASR (lowercase,
+    # mostly unpunctuated): the first sweep trained on targets that were only
+    # 71% punctuated, and the model reproduced that rate as 65/100 instead of
+    # the gold's 100/100. One epoch at the conservative end of the adaptation
+    # bracket is the decisive test of the contract, so it is not the sweep.
+    "pc-mix-lr1e5-e1": {
+        "lr": 1e-5,
+        "epochs": 1,
+        "note": "punctuation-contract mix, conservative LR, one epoch",
+    },
     # Learning-rate bracket around the baseline.
     "mix-lr1e5-e3": {
         "lr": 1e-5,
