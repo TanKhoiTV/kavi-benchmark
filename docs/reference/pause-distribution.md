@@ -48,9 +48,11 @@ English (Eng-Vie, 100 clips, mean 5.96 s):
 
 ## Verdict
 
-**300 ms is unsafe, in both directions.** It cuts 7% of Vietnamese utterances mid-sentence and endpoints ~38% of English clips early. The Vietnamese figure is the load-bearing one: those clips are single sentences, so a cut there loses speech outright.
+**300 ms is unsafe, in both directions.** It cuts 7% of Vietnamese utterances mid-sentence and endpoints ~38% of English clips early. The Vietnamese figure is the load-bearing one: those clips are single sentences, so a cut there splits one sentence in two.
 
-**500 ms is also unsafe, and that is today's setting.** It cuts 3 Vietnamese clips (VE-8762 has a 672 ms intra-sentence pause, VE-9469 544 ms, VE-8940 1120 ms) and endpoints ~19 English clips per 100. The Vietnamese 1120 ms gap is not robust — it disappears at threshold 0.7, which marks it as marginal speech rather than a clear silence — but the 672 ms gap is present at both thresholds. So the shipping configuration already truncates roughly 2-3% of Vietnamese utterances, which is a correctness issue independent of latency.
+A split does not discard audio: the remainder becomes a new utterance and is translated on its own. The costs are that the fragment is translated without its antecedent clause, and the second half pays the whole VAD/ASR/MT/TTS chain again. That is a real defect, but it is less severe than lost speech, and `endpointing-gate.md` corrects the framing further.
+
+**500 ms also splits sentences, and that is today's setting.** It cuts 3 Vietnamese clips (VE-8762 has a 672 ms intra-sentence pause, VE-9469 544 ms, VE-8940 1120 ms) and endpoints ~19 English clips per 100. The Vietnamese 1120 ms gap is not robust — it disappears at threshold 0.7, which marks it as marginal speech rather than a clear silence — but the 672 ms gap is present at both thresholds. So the shipping configuration already truncates roughly 2-3% of Vietnamese utterances, which is a correctness issue independent of latency.
 
 **There is no safe value below 500 ms**, which answers the "largest safe value" question with nothing: every candidate from 200 to 450 ms truncates more clips than 500 ms does. And 500 ms does not clear the Vietnamese maximum either; clearing 672 ms robustly would need a timeout of at least 704 ms (672 plus one frame).
 
