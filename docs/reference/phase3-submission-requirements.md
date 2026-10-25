@@ -1,6 +1,6 @@
 # Phase 3 submission: what the brief and template actually require
 
-Sources: `1V_P3_Prototype_Brief.pdf` and `[MAKE A COPY TO USE] 1V_P3_Prototype Submission_Template.pdf` (both in `~/Downloads/2026-10-24 (2nd part)/`). This page records the requirements as operative facts, then the nuances that are easy to miss and the gaps they expose in this project.
+Sources: `1V_P3_Prototype_Brief.pdf` and `[MAKE A COPY TO USE] 1V_P3_Prototype Submission_Template.pdf`, distributed to Top-40 teams with the Round-3 brief (not redistributed in this repository). This page records the requirements as operative facts, then the nuances that are easy to miss and the gaps they expose in this project.
 
 ## Timeline (tentative, but dated)
 

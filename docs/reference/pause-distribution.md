@@ -6,7 +6,7 @@
 
 ## Method
 
-- **Detector:** silero-vad (the library default JIT model, 16 kHz) over the organizer sample corpus in `~/Downloads/2026-10-24/Vie-Eng dataset/`: 100 clips per direction, 16 kHz mono, mean 3.34 s (Vietnamese) and 5.96 s (English).
+- **Detector:** silero-vad (the library default JIT model, 16 kHz) over the organizer sample corpus distributed with the Round-3 brief (100 clips per direction,, 16 kHz mono, mean 3.34 s Vietnamese and 5.96 s English). The audio is not redistributed here; only the measurement and its command are.
 - **A pause** is the gap between two consecutive speech segments. Leading silence before the first segment and trailing silence after the last are excluded: they are not pauses, and the timeout is supposed to fire on them.
 - **Two deliberate choices to avoid flattering a short timeout:**
   - `speech_pad_ms=0`. The library default of 30 ms pads every segment at both ends and would shrink each measured pause by up to 60 ms.
