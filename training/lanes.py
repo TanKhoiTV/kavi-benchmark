@@ -46,6 +46,14 @@ LANES: dict[str, dict] = {
         "epochs": 1,
         "note": "punctuation-contract mix, conservative LR, one epoch",
     },
+    # The tokenizer fix. Every lane above encoded labels with spm_source, so they
+    # all learned a corrupted target distribution. Same corpus and schedule as
+    # pc-mix-lr1e5-e1, so the delta isolates the fix itself.
+    "pcfix-lr1e5-e1": {
+        "lr": 1e-5,
+        "epochs": 1,
+        "note": "text_target fix on the contract mix, one epoch",
+    },
     # Learning-rate bracket around the baseline.
     "mix-lr1e5-e3": {
         "lr": 1e-5,
