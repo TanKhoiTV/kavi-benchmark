@@ -80,6 +80,8 @@
 - Give AI Hub a second look and narrow the dismissal
 - Add the handoff snapshot and make the intro honest
 - Run the doc checker over the handoff file
+- **bench:** Plan the MT fine-tune data against the measured baseline
+- **bench:** Count the FLEURS train split at fetch time, not from memory
 
 ### Features
 
