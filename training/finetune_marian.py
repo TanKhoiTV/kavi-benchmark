@@ -55,12 +55,20 @@ class PairDataset(Dataset):
 
     def __getitem__(self, i: int) -> dict[str, torch.Tensor]:
         vi, en = self.rows[i]
+        # The two sides need their own SentencePiece model. MarianTokenizer
+        # encodes with spm_source by default, and this pair ships source.spm and
+        # target.spm as separately trained models that segment differently
+        # ("loading bay" is 10693 6915 via source, 18184 via target) - so
+        # tok(en) labels a target with ids the model reads as different pieces.
+        # text_target switches to spm_target. Training with tok(en) instead was
+        # why every lane landed near 8.8 BLEU with ~22-word output and no final
+        # period, whatever the learning rate, epoch count or corpus.
         src = self.tok(vi, max_length=self.max_src, truncation=True, padding=False)[
             "input_ids"
         ]
-        tgt = self.tok(en, max_length=self.max_tgt, truncation=True, padding=False)[
-            "input_ids"
-        ]
+        tgt = self.tok(
+            text_target=en, max_length=self.max_tgt, truncation=True, padding=False
+        )["input_ids"]
         return {"input_ids": torch.tensor(src), "labels": torch.tensor(tgt)}
 
 
