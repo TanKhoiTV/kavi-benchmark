@@ -1,4 +1,4 @@
-"""Orchestrate the eight T4 lanes across four Kaggle accounts.
+"""Orchestrate the fine-tune lanes across Kaggle accounts.
 
 Kaggle has no cross-account scheduling API, so this drives the `kaggle` CLI once
 per account with that account's own credentials, and keeps a local ledger of what
@@ -6,40 +6,47 @@ was pushed where. Nothing here holds a token: credentials live in
 ``training/accounts.toml`` (gitignored) and are written to a per-account
 ``KAGGLE_CONFIG_DIR`` at run time, never into a kernel and never into git.
 
-    python -m training.launch check                 # validate accounts + plan
-    python -m training.launch dataset               # stage + upload the input dataset (per account)
-    python -m training.launch run --wave 1          # one lane per account
-    python -m training.launch run --wave 2          # the second lane per account
+Accounts are whatever that file holds, in file order — adding a teammate's token
+re-balances the sweep without renaming anything. Entries still holding a
+placeholder are skipped, so the lanes run on one account, two, or four.
+
+    python -m training.launch check --verify     # parse + authenticate + print the plan
+    python -m training.launch dataset            # stage + upload the inputs (per active account)
+    python -m training.launch run --wave 1       # first lane on each active account
+    python -m training.launch run --wave 2
     python -m training.launch status
     python -m training.launch pull --lane mix-lenp05
-    python -m training.launch probe --account m1    # measure the quota counter
+    python -m training.launch probe --minutes 15 # measure the quota counter
 
 `--dry-run` works before or after the subcommand: it stages the files and prints
-the CLI calls without executing them, which is also how the notebook layout is
-reviewed without touching Kaggle.
+the CLI calls without executing them, which is how the notebook layout is reviewed.
 """
 
 from __future__ import annotations
 
 import argparse
-import contextlib
 import json
 import os
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
-from .lanes import ACCOUNTS, LANES, schedule
+from .lanes import LANES, schedule
 
 REPO = Path(__file__).resolve().parents[1]
 WORK = REPO / "eval_data" / "kaggle"
 LEDGER = WORK / "ledger.json"
 DATASET_TITLE = "kavi mt finetune vi-en"
 DATASET_SLUG = DATASET_TITLE.replace(" ", "-")
+PLACEHOLDER_MARKS = ("REPLACE", "dummy", "REPLACE_ME")
 
 # Lane config key -> training CLI flag. Anything not listed is not passed, so a
 # lane cannot silently set a flag the trainer does not have.
+# `kaggle kernels push --accelerator` sets request.machine_shape, so the GPU shape
+# can be chosen at push time instead of in the UI. Kaggle's notebook offering for
+# this class is 2xT4, which is one machine shape, not "one GPU".
+ACCELERATOR = "NvidiaTeslaT4"
+
 LANE_ARG = {
     "lr": "--lr",
     "epochs": "--epochs",
@@ -49,19 +56,28 @@ LANE_ARG = {
 }
 
 
-def read_accounts() -> dict[str, dict]:
-    """Parse training/accounts.toml without a TOML dependency."""
+def mask(value: str) -> str:
+    if not value:
+        return "(empty)"
+    if len(value) <= 6:
+        return value[:2] + "*" * (len(value) - 2)
+    return value[:3] + "*" * (len(value) - 6) + value[-3:]
+
+
+def read_accounts() -> list[dict]:
+    """Parse training/accounts.toml into file order, flagging placeholders."""
     path = REPO / "training" / "accounts.toml"
     if not path.exists():
         raise SystemExit(
-            f"missing {path}\ncopy training/accounts.toml.example and fill in the four\n"
+            f"missing {path}\ncopy training/accounts.toml.example and fill in the\n"
             "Kaggle username/key pairs (Kaggle -> Account -> Create New Token)."
         )
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
     except OSError as exc:
         raise SystemExit(f"cannot read {path}: {exc}") from exc
-    accounts: dict[str, dict] = {}
+
+    entries: list[dict] = []
     current: dict = {}
     for raw in lines:
         line = raw.split("#", 1)[0].strip()
@@ -69,7 +85,7 @@ def read_accounts() -> dict[str, dict]:
             continue
         if line.startswith("[[") and line.endswith("]]"):
             if current:
-                accounts[current["name"]] = current
+                entries.append(current)
             current = {}
             continue
         if "=" not in line:
@@ -77,42 +93,123 @@ def read_accounts() -> dict[str, dict]:
         key, value = (part.strip() for part in line.split("=", 1))
         current[key] = value.strip().strip('"').strip("'")
     if current:
-        accounts[current["name"]] = current
-    missing = [name for name in ACCOUNTS if name not in accounts]
-    if missing:
-        raise SystemExit(f"accounts.toml is missing: {', '.join(missing)}")
-    return accounts
+        entries.append(current)
+
+    for entry in entries:
+        name = entry.get("name") or "(unnamed)"
+        user = entry.get("username", "")
+        key = entry.get("key", "")
+        entry["name"] = name
+        entry["placeholder"] = (
+            # An empty value is the loudest placeholder there is, but it cannot
+            # live in PLACEHOLDER_MARKS: every string starts with "".
+            not user
+            or not key
+            or any(user.startswith(mark) for mark in PLACEHOLDER_MARKS)
+            or any(key.startswith(mark) for mark in PLACEHOLDER_MARKS)
+            or len(key) < 20
+        )
+    if not entries:
+        raise SystemExit(f"{path} holds no [[accounts]] blocks")
+    return entries
 
 
-def config_dir(account: dict) -> Path:
-    """Write that account's kaggle.json to an isolated config dir (gitignored)."""
-    directory = WORK / "creds" / account["name"]
-    directory.mkdir(parents=True, exist_ok=True)
-    cfg = directory / "kaggle.json"
-    cfg.write_text(json.dumps({"username": account["username"], "key": account["key"]}))
-    # Windows has ACLs, not mode bits; a failed chmod there is not an error.
-    with contextlib.suppress(OSError):
-        cfg.chmod(0o600)
-    return directory
+def select(accounts: list[dict], spec: str | None) -> list[dict]:
+    """Resolve --accounts: 'all'/'active' = every real account, or a name list."""
+    if spec in (None, "", "all", "active"):
+        active = [a for a in accounts if not a["placeholder"]]
+        if not active:
+            raise SystemExit(
+                "no usable account yet: every entry in training/accounts.toml still "
+                "holds a placeholder token"
+            )
+        return active
+    wanted = [part.strip() for part in spec.split(",") if part.strip()]
+    chosen: list[dict] = []
+    for name in wanted:
+        match = next((a for a in accounts if a["name"] == name), None)
+        if match is None:
+            known = ", ".join(a["name"] for a in accounts)
+            raise SystemExit(f"no account named {name!r}; accounts.toml holds: {known}")
+        if match["placeholder"]:
+            raise SystemExit(f"account {name!r} still holds a placeholder token")
+        chosen.append(match)
+    return chosen
+
+
+def by_name(accounts: list[dict], name: str) -> dict:
+    match = next((a for a in accounts if a["name"] == name), None)
+    if match is None:
+        raise SystemExit(
+            f"ledger names account {name!r}, which accounts.toml no longer holds"
+        )
+    if match["placeholder"]:
+        raise SystemExit(
+            f"ledger names account {name!r}, whose token is now a placeholder"
+        )
+    return match
+
+
+def account_env(account: dict) -> dict:
+    """Environment carrying exactly one account's credentials.
+
+    Kaggle's newer tokens (``KGAT_...``) are a single API token, not the legacy
+    username+long-key pair, so they go in as ``KAGGLE_API_TOKEN``. The CLI applies
+    ``KAGGLE_*`` environment values after kaggle.json, so a stale global credential
+    cannot override this - and a subprocess gets exactly one identity.
+    """
+    env = {k: v for k, v in os.environ.items() if not k.startswith("KAGGLE_")}
+    env["KAGGLE_API_TOKEN"] = account["key"]
+    env["KAGGLE_USERNAME"] = account["username"]
+    return env
+
+
+def run_cli(
+    account: dict, *args: str, dry: bool = False
+) -> subprocess.CompletedProcess:
+    cmd = ["kaggle", *args]
+    if dry:
+        print("   [dry-run]", " ".join(cmd), f"(token for {account['name']})")
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+    return subprocess.run(
+        cmd, env=account_env(account), text=True, capture_output=True, check=False
+    )
 
 
 def kaggle(account: dict, *args: str, dry: bool = False, capture: bool = False) -> str:
-    env = dict(os.environ)
-    env["KAGGLE_CONFIG_DIR"] = str(config_dir(account))
-    cmd = ["kaggle", *args]
-    if dry:
-        print(
-            "   [dry-run]",
-            " ".join(cmd),
-            f"(KAGGLE_CONFIG_DIR={env['KAGGLE_CONFIG_DIR']})",
-        )
-        return ""
-    result = subprocess.run(
-        cmd, env=env, text=True, capture_output=capture, check=False
-    )
+    result = run_cli(account, *args, dry=dry)
     if capture:
         return (result.stdout or "") + (result.stderr or "")
+    if result.returncode != 0:
+        tail = ((result.stdout or "") + (result.stderr or "")).strip().splitlines()[-1:]
+        print(f"   kaggle exited {result.returncode}: {' '.join(tail)}")
     return ""
+
+
+def check_auth(account: dict) -> tuple[bool, str, dict | None]:
+    """One authenticated call that also reports quota.
+
+    Judged on the exit code, not on scanning the message: an unauthenticated run
+    prints "Authentication required", which contains none of the obvious markers
+    (401/403/unauthorized) and silently passed an earlier string-matching version.
+    """
+    if account["placeholder"]:
+        return False, "placeholder token", None
+    result = run_cli(account, "quota", "--format", "json")
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip().splitlines()
+        first = detail[0] if detail else f"exit {result.returncode}"
+        return False, first[:90], None
+    payload = (result.stdout or "").strip()
+    start = payload.find("[")
+    try:
+        rows = json.loads(payload[start:]) if start >= 0 else []
+    except json.JSONDecodeError:
+        return True, "authenticated (quota unparsed)", None
+    quota = {row.get("resource", "?"): row for row in rows if isinstance(row, dict)}
+    gpu = quota.get("GPU", {})
+    summary = f"GPU {gpu.get('used', '?')} used / {gpu.get('remaining', '?')} left of {gpu.get('total', '?')}"
+    return True, summary, gpu or None
 
 
 def load_ledger() -> dict:
@@ -263,47 +360,64 @@ def notebook_for(lane: str, account: dict) -> str:
 
 def cmd_check(args: argparse.Namespace) -> int:
     accounts = read_accounts()
-    plan = schedule()
-    total = 0
-    print(f"{'account':8s} {'user':20s} lanes")
-    for acct in ACCOUNTS:
-        total += len(plan[acct])
-        print(
-            f"{acct:8s} {accounts[acct]['username'][:20]:20s} {', '.join(plan[acct])}"
+    print(f"{'account':10s} {'username':16s} {'token':20s} state")
+    for acct in accounts:
+        if acct["placeholder"]:
+            print(
+                f"{acct['name']:10s} {mask(acct['username']):16s} {mask(acct['key']):20s} "
+                "placeholder - waiting for owner"
+            )
+            continue
+        ok, detail, _ = (
+            check_auth(acct)
+            if args.verify
+            else (True, "token present (not verified)", None)
         )
+        state = ("OK" if ok else "FAIL") + ": " + detail
+        print(
+            f"{acct['name']:10s} {mask(acct['username']):16s} {mask(acct['key']):20s} {state}"
+        )
+
+    active = select(accounts, args.accounts)
+    plan = schedule([a["name"] for a in active])
+    print(f"\n{len(active)} usable account(s) of {len(accounts)}; lanes per account:")
+    for name, lanes in plan.items():
+        print(f"  {name:10s} {len(lanes)} lanes: {', '.join(lanes)}")
+    covered = sum(1 for lanes in plan.values() for _ in lanes)
+    print(f"\n{covered} of {len(LANES)} lanes covered by the current accounts.")
+    if covered < len(LANES):
+        print(f"{len(LANES) - covered} lane(s) wait for the remaining tokens; re-run")
+        print("`check` after each arrives - the split re-balances automatically.")
     print(
-        f"\n{len(ACCOUNTS)} accounts, {total} lanes = {len(ACCOUNTS) * 2} T4s if each session takes 2xT4"
+        "\nquota: 30 GPU-h/week/account. Whether a 2xT4 hour costs 1 or 2 quota-hours"
     )
-    print("quota: 30 GPU-h/week/account. Whether a 2xT4 hour costs 1 or 2 quota-hours")
     print(
         "       is unresolved - measure it with `launch.py probe` before planning the week."
     )
-    if total != len(LANES):
-        print(f"note: {len(LANES)} lanes defined, {total} scheduled", file=sys.stderr)
     return 0
 
 
 def cmd_dataset(args: argparse.Namespace) -> int:
     accounts = read_accounts()
+    targets = select(accounts, args.accounts)
     stage = stage_dataset()
     size = sum(f.stat().st_size for f in stage.rglob("*") if f.is_file()) / 2**20
-    print(f"staged {stage}  ({size:.0f} MB)")
+    print(f"staged {stage}  ({size:.0f} MB) -> {len(targets)} account(s)")
     ledger = load_ledger()
-    targets = ACCOUNTS if args.account == "all" else (args.account,)
     for acct in targets:
         meta_path = stage / "dataset-metadata.json"
         try:
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
             raise SystemExit(f"{meta_path} is not valid JSON: {exc}") from exc
-        meta["id"] = accounts[acct]["username"] + "/" + DATASET_SLUG
+        meta["id"] = acct["username"] + "/" + DATASET_SLUG
         meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
-        existing = ledger["dataset"].get(acct)
+        existing = ledger["dataset"].get(acct["name"])
         suffix = " (new version)" if existing else ""
-        print(f"{acct}: dataset {meta['id']}{suffix}")
+        print(f"{acct['name']}: dataset {meta['id']}{suffix}")
         if existing:
             kaggle(
-                accounts[acct],
+                acct,
                 "datasets",
                 "version",
                 "-p",
@@ -314,7 +428,7 @@ def cmd_dataset(args: argparse.Namespace) -> int:
             )
         else:
             kaggle(
-                accounts[acct],
+                acct,
                 "datasets",
                 "create",
                 "-p",
@@ -323,46 +437,50 @@ def cmd_dataset(args: argparse.Namespace) -> int:
                 "zip",
                 dry=args.dry_run,
             )
-        ledger["dataset"][acct] = meta["id"]
+        ledger["dataset"][acct["name"]] = meta["id"]
     save_ledger(ledger)
     return 0
 
 
 def cmd_run(args: argparse.Namespace) -> int:
     accounts = read_accounts()
-    plan = schedule()
+    targets_pool = select(accounts, args.accounts)
     ledger = load_ledger()
-    targets: list[tuple[str, str]] = []
-    if args.lane:
-        pool = ACCOUNTS if args.account == "all" else (args.account,)
-        targets = [(acct, args.lane) for acct in pool]
-    else:
-        for acct in ACCOUNTS:
-            lanes = plan[acct]
-            if args.wave - 1 < len(lanes):
-                targets.append((acct, lanes[args.wave - 1]))
+    plan = schedule([a["name"] for a in targets_pool])
+    targets: list[tuple[dict, str]] = []
+    for acct in targets_pool:
+        lanes = plan[acct["name"]]
+        if args.lane:
+            if args.lane not in LANES:
+                raise SystemExit(f"unknown lane {args.lane}; known: {', '.join(LANES)}")
+            targets.append((acct, args.lane))
+        elif 0 <= args.wave - 1 < len(lanes):
+            targets.append((acct, lanes[args.wave - 1]))
+    if not targets:
+        raise SystemExit(
+            f"wave {args.wave} is past the end of the schedule for these accounts"
+        )
 
     for acct, lane in targets:
-        if lane not in LANES:
-            raise SystemExit(f"unknown lane {lane}; known: {', '.join(LANES)}")
         kdir = WORK / "kernels" / lane
         kdir.mkdir(parents=True, exist_ok=True)
         slug = ("kavi-mt-" + lane).replace("_", "-")
         (kdir / (slug + ".ipynb")).write_text(
-            notebook_for(lane, accounts[acct]), encoding="utf-8"
+            notebook_for(lane, acct), encoding="utf-8"
         )
         meta = {
-            "id": accounts[acct]["username"] + "/" + slug,
+            "id": acct["username"] + "/" + slug,
             "title": "kavi mt " + lane,
             "code_file": slug + ".ipynb",
             "language": "python",
             "kernel_type": "notebook",
             "is_private": True,
             "enable_gpu": True,
+            "machine_shape": ACCELERATOR,
             "enable_internet": False,
             "dataset_sources": [
                 ledger["dataset"].get(
-                    acct, accounts[acct]["username"] + "/" + DATASET_SLUG
+                    acct["name"], acct["username"] + "/" + DATASET_SLUG
                 )
             ],
             "kernel_sources": [],
@@ -371,10 +489,11 @@ def cmd_run(args: argparse.Namespace) -> int:
         (kdir / "kernel-metadata.json").write_text(
             json.dumps(meta, indent=2), encoding="utf-8"
         )
-        print(f"{acct}: pushing {lane} -> {meta['id']}")
-        print("      select the T4 x2 accelerator for this notebook in the Kaggle UI")
-        kaggle(accounts[acct], "kernels", "push", "-p", str(kdir), dry=args.dry_run)
-        ledger["runs"][lane] = {"account": acct, "ref": meta["id"]}
+        print(
+            f"{acct['name']}: pushing {lane} -> {meta['id']} (machine_shape={ACCELERATOR})"
+        )
+        kaggle(acct, "kernels", "push", "-p", str(kdir), dry=args.dry_run)
+        ledger["runs"][lane] = {"account": acct["name"], "ref": meta["id"]}
     save_ledger(ledger)
     return 0
 
@@ -386,17 +505,12 @@ def cmd_status(args: argparse.Namespace) -> int:
         print("nothing pushed yet")
         return 0
     for lane, info in ledger["runs"].items():
-        acct = info["account"]
+        acct = by_name(accounts, info["account"])
         out = kaggle(
-            accounts[acct],
-            "kernels",
-            "status",
-            info["ref"],
-            capture=True,
-            dry=args.dry_run,
+            acct, "kernels", "status", info["ref"], capture=True, dry=args.dry_run
         )
         last = out.strip().splitlines()[-1] if out.strip() else "(dry-run)"
-        print(f"{lane:18s} {acct:4s} {last}")
+        print(f"{lane:18s} {info['account']:10s} {last}")
     return 0
 
 
@@ -407,20 +521,14 @@ def cmd_pull(args: argparse.Namespace) -> int:
     lanes = [args.lane] if args.lane else list(known)
     for lane in lanes:
         if lane not in known:
-            raise SystemExit(
-                f"{lane} is not in the ledger; known runs: {', '.join(known) or 'none'}"
-            )
+            listed = ", ".join(known) or "none"
+            raise SystemExit(f"{lane} is not in the ledger; known runs: {listed}")
         info = known[lane]
+        acct = by_name(accounts, info["account"])
         dest = WORK / "output" / lane
         dest.mkdir(parents=True, exist_ok=True)
         kaggle(
-            accounts[info["account"]],
-            "kernels",
-            "output",
-            info["ref"],
-            "-p",
-            str(dest),
-            dry=args.dry_run,
+            acct, "kernels", "output", info["ref"], "-p", str(dest), dry=args.dry_run
         )
         print(f"{lane}: pulled to {dest}")
     return 0
@@ -435,7 +543,7 @@ def cmd_probe(args: argparse.Namespace) -> int:
     decides whether the week holds ~244 or ~488 T4-hours.
     """
     accounts = read_accounts()
-    acct = args.account
+    acct = select(accounts, args.accounts)[0]
     kdir = WORK / "kernels" / "probe"
     kdir.mkdir(parents=True, exist_ok=True)
     slug = "kavi-mt-quota-probe"
@@ -463,13 +571,14 @@ def cmd_probe(args: argparse.Namespace) -> int:
         encoding="utf-8",
     )
     meta = {
-        "id": accounts[acct]["username"] + "/" + slug,
+        "id": acct["username"] + "/" + slug,
         "title": "kavi mt quota probe",
         "code_file": slug + ".ipynb",
         "language": "python",
         "kernel_type": "notebook",
         "is_private": True,
         "enable_gpu": True,
+        "machine_shape": ACCELERATOR,
         "enable_internet": False,
         "dataset_sources": [],
         "kernel_sources": [],
@@ -478,14 +587,12 @@ def cmd_probe(args: argparse.Namespace) -> int:
     (kdir / "kernel-metadata.json").write_text(
         json.dumps(meta, indent=2), encoding="utf-8"
     )
-    print(
-        f"probe: {args.minutes} min on {acct}. Select the T4 x2 accelerator in the UI first."
-    )
+    print(f"probe: {args.minutes} min on {acct['name']} (machine_shape={ACCELERATOR}).")
     print(
         "Read the GPU-hours counter before and after; the delta over the runtime decides"
     )
     print("whether the week holds ~244 or ~488 T4-hours.")
-    kaggle(accounts[acct], "kernels", "push", "-p", str(kdir), dry=args.dry_run)
+    kaggle(acct, "kernels", "push", "-p", str(kdir), dry=args.dry_run)
     return 0
 
 
@@ -497,13 +604,22 @@ def main() -> int:
     common.add_argument(
         "--dry-run", action="store_true", help="stage and print, do not call the API"
     )
+    common.add_argument(
+        "--accounts",
+        default="all",
+        help="comma-separated account names from accounts.toml, or 'all' (default: every real token)",
+    )
     ap.add_argument("--dry-run", action="store_true", help=argparse.SUPPRESS)
 
     sub = ap.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("check", parents=[common]).set_defaults(fn=cmd_check)
+
+    check = sub.add_parser("check", parents=[common])
+    check.add_argument(
+        "--verify", action="store_true", help="make one authenticated call per account"
+    )
+    check.set_defaults(fn=cmd_check)
 
     dataset = sub.add_parser("dataset", parents=[common])
-    dataset.add_argument("--account", default="all")
     dataset.set_defaults(fn=cmd_dataset)
 
     run = sub.add_parser("run", parents=[common])
@@ -513,7 +629,6 @@ def main() -> int:
     run.add_argument(
         "--lane", default=None, help="push one named lane instead of a wave"
     )
-    run.add_argument("--account", default="all")
     run.set_defaults(fn=cmd_run)
 
     sub.add_parser("status", parents=[common]).set_defaults(fn=cmd_status)
@@ -523,7 +638,6 @@ def main() -> int:
     pull.set_defaults(fn=cmd_pull)
 
     probe = sub.add_parser("probe", parents=[common])
-    probe.add_argument("--account", default="m1")
     probe.add_argument("--minutes", type=float, default=15)
     probe.set_defaults(fn=cmd_probe)
 

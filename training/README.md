@@ -10,28 +10,28 @@ Four accounts × 2×T4 is **four concurrent sessions, not one eight-way job**: t
 
 | spend | effect |
 | --- | --- |
-| 2×T4 per job (DDP) | each config finishes sooner; fewer configs explored |
+| 2xT4 per job (DDP) | each config finishes sooner; fewer configs explored |
 | **1 T4 per job, two jobs per account** | **twice as many configs in the same wall clock** ← chosen |
 
 A 77M Marian model gets little from PCIe DDP (Kaggle has no NVLink), and the open questions are *which* configuration wins, not how fast one finishes. Pass `--ddp` if a lane turns out to need the other shape.
 
 ## The first decision to make, before planning the week
 
-Kaggle documents "30 GPU hours per week" **without saying whether an hour on a 2×T4 session consumes one quota-hour or two**. The account page counter is the only authority. Both readings for four accounts over the ~2.7 weeks to the deadline:
+`kaggle quota` (now surfaced by `launch.py check --verify`) reports the counter directly: **30 GPU-hours per account per week**, in *session hours*, with a weekly refresh. What it does not say is whether an hour on a 2xT4 session consumes one quota-hour or two, so both readings over the ~2.7 weeks to the deadline:
 
 | reading | per account/week | all four | available before 13/11 |
 | --- | --- | --- | --- |
 | session-hour | 30 session-h (= 60 T4-h) | 180 T4-h | **~488 T4-h** |
 | T4-hour | 30 T4-h | 90 T4-h | **~244 T4-h** |
 
-Run `python -m training.launch probe --account m1 --minutes 15`, note the counter before and after, and record the answer here. At the conservative reading there is still enough for the whole sweep plus a second wave; the scarce resource is attention, not GPU.
+Run `python -m training.launch probe --minutes 15`, read the counter before and after, and record the answer here. Either way the whole sweep fits — it needs roughly 8-13 session hours — so this is planning discipline, not a blocker; the scarce resource is attention, not GPU.
 
 ## Setup
 
 ```bash
-# 1. credentials: one verified account per person, four people
-cp training/accounts.toml.example training/accounts.toml   # then fill in 4 username/key pairs
-python -m training.launch check                            # validates + prints the plan
+# 1. credentials: one verified account per person
+cp training/accounts.toml.example training/accounts.toml   # then fill in one entry per person
+python -m training.launch check --verify                   # authenticates + shows quota + the plan
 
 # 2. the corpus (once; needs network, writes ~2.2 GB under eval_data/, gitignored)
 python -m training.prepare_data
