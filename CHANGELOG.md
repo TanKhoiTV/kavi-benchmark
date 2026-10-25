@@ -82,6 +82,7 @@
 - Run the doc checker over the handoff file
 - **bench:** Plan the MT fine-tune data against the measured baseline
 - **bench:** Count the FLEURS train split at fetch time, not from memory
+- **decisions:** Price beam=4 on the device for open parameter #6
 
 ### Features
 
