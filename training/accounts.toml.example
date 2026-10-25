@@ -1,0 +1,33 @@
+# Kaggle credentials, one entry per verified team member.
+#
+# DO NOT COMMIT THIS FILE. It is gitignored, and scripts/leak_check.py scans for
+# tracked credentials. Real tokens: Kaggle -> your avatar -> Settings -> API ->
+# "Create New Token", which downloads kaggle.json holding {"username","key"}.
+#
+# One account per person is legitimate. Creating extra accounts inside one person's
+# name to lift the quota is what Kaggle's anti-abuse filters exist to catch, and a
+# disqualified team gains nothing — so these four must be four people.
+#
+# Copy to training/accounts.toml and fill in:
+#
+#   cp training/accounts.toml.example training/accounts.toml
+
+[[accounts]]
+name = "m1"
+username = "REPLACE_ME"
+key = "REPLACE_ME"
+
+[[accounts]]
+name = "m2"
+username = "REPLACE_ME"
+key = "REPLACE_ME"
+
+[[accounts]]
+name = "m3"
+username = "REPLACE_ME"
+key = "REPLACE_ME"
+
+[[accounts]]
+name = "m4"
+username = "REPLACE_ME"
+key = "REPLACE_ME"
