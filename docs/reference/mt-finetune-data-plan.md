@@ -83,7 +83,7 @@ The derived-weights question — whether a model fine-tuned on NC text is itself
 | **A — clean core** | ParaCrawl vi–en (**verify the `vi` column exists in the release used**) | CC0 1.0 | general web volume, no conditions | sample to size |
 | **A — clean core** | HPLT / MultiHPLT | CC0 | general volume alternative | sample to size |
 | **A — clean core** | free-software localisation: GNOME, KDE4, Ubuntu, Mozilla-I10n | GPL/LGPL/MPL/FDL — copyleft binds the text, commercial use of the model is fine | short UI-style imperatives, the closest public analogue to "please wait a moment" | small, high value |
-| **A — clean core** | FLEURS `vi_vn` **train** split | CC BY 4.0 | clean short-sentence volume; **never the test split**, which the published benchmark is scored on | ~3K |
+| **A — clean core** | FLEURS `vi_vn` **train** split | CC BY 4.0 | clean short-sentence volume; **never the test split**, which the published benchmark is scored on | thousands at most — count it at fetch time, it is not a volume source |
 | **B — needs a ruling** | WikiMatrix / Wikipedia | CC BY-SA 4.0 — attribution *and* share-alike; whether SA reaches weights is contested | optional volume if A is too thin | defer |
 | **C — authored** | service-encounter pairs written by the team, in the register §1.3 measures | ours | **the domain signal** — the only data that targets the held-out distribution | 2,000–5,000 |
 | **D — authored** | factory/construction/logistics pairs | ours | criterion C's scripted scenario only; not expected to move the hidden sentence benchmark | 300–800 |
