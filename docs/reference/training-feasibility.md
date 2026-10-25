@@ -134,3 +134,55 @@ Lane 3 deserves explanation, because it is the most interesting project availabl
 **Character-level VITS sidesteps the licence problem entirely.** The Piper path is blocked because its frontend needs espeak-ng (GPL-3.0, ADR-031) and the shipped espeak data lacks a `voices/vi` entry. But Vietnamese orthography is close to phonemic — the tone is written as a diacritic on the vowel — so a character-level model receives most of the information a phoneme sequence would carry. Training a VITS on characters needs **no espeak, no Piper, and no GPL dependency**, and VITS is **1-NFE**, which is the latency property this project has been chasing.
 
 Its gate is a one-hour experiment: train on 1 h of clean VI speech, listen, and if the character-level output is intelligible, the 10-100 h run is worth the compute. That gate costs ~2 T4-hours and answers the question that has blocked TTS for three rounds.
+
+## 9. Dataset licensing: the corpus we need is the one we cannot use
+
+This is the load-bearing constraint on every training lane, and it is worse than the compute picture. Checked against the rights holders, not Hugging Face YAML tags — mirrors in this space routinely apply `cc-by-4.0` as a default.
+
+| corpus | stated licence | who says so | usable under ADR-029? |
+|---|---|---|---|
+| **Common Voice vi** (v27.0) | **CC0-1.0** | Mozilla, authoritative | **yes** — but only **7.81 h validated / 22.97 h total**, 419 speakers, read speech |
+| **FLEURS vi** | **CC-BY-4.0** | Google, authoritative | **yes** — small (hours), read speech, already local |
+| Bud500 (~500 h) | Apache-2.0 | VietAI's own repo | probably — but the card also says "research purposes only", and the audio is compiled from public sources VietAI cannot license |
+| VLSP-2020 100 h | *none published* | nobody — the `cc-by-4.0` tag is an unofficial mirror's | **no** — BigScience logged licensing as "unclear"; the release announcement has no licence clause |
+| InfoRe №1 (~25 h, single female) | *none published* | nobody — mirrors disagree (CC-BY / NC-SA / NC), and one mirror commit is literally titled "less restrictive license" | **no** — a mirror cannot relax a licence it never held |
+| VIVOS (15 h) | **CC BY-NC-SA 4.0** | AILAB-VNUHCM, Zenodo DOI | **no** — non-commercial *and* share-alike |
+| Emilia | CC BY-NC 4.0 | Meta | **no** — but see §10, it is the training data behind ZipVoice's released checkpoints |
+
+**The consequence is blunt.** Every Vietnamese TTS paper trains on VLSP-100h, InfoRe-25h or VIVOS — all blocked. What remains licence-clean is **~8 validated hours of Common Voice** (419 speakers, varied microphones, read speech) plus a few hours of FLEURS. That is a fine ASR adaptation corpus and a thin, multi-speaker, mixed-quality TTS corpus.
+
+So the honest position for any TTS lane: **the constraint is data, not GPU.** A licence-clean single-voice Vietnamese TTS cannot be trained to commercial quality on what is legally available, and that is the same wall ADR-029 hit with NLLB, MMS-TTS and Piper.
+
+## 10. Correction: ZipVoice was skimmed, and it should not have been
+
+Earlier revisions of this page dismissed ZipVoice on the strength of one sentence — that `hynt/ZipVoice-Vietnamese-2500h` is CC-BY-NC-SA-4.0 and therefore blocked. That conflated three separable things, and the conflation hid the best available option:
+
+| layer | licence | verdict |
+|---|---|---|
+| `hynt/ZipVoice-Vietnamese-2500h` (pre-trained VI checkpoint) | CC-BY-NC-SA-4.0 | blocked |
+| **k2-fsa/ZipVoice base** — code *and* weights | **Apache-2.0** | usable |
+| fine-tuning pipeline (`egs/zipvoice/run_finetune.sh`, `run_custom.sh`) | Apache-2.0 | usable |
+
+The pre-trained *Vietnamese checkpoint* being NC says nothing about whether the *architecture* can be fine-tuned on licence-clean data. It can.
+
+What this changes, concretely:
+
+1. **Few-step comes free.** ZipVoice-Distill ships as released weights at **~4-8 Euler steps with classifier-free guidance folded into the student**, 123M params. The 100-200 T4-hour distillation project described in §2 is not needed — it has already been done upstream. That was the single biggest cost in the TTS lane, and it is not real.
+2. **The runtime is already in the app.** sherpa-onnx — the 1.13.8 AAR this project vendors — has a ZipVoice path (`OfflineTtsModelConfig.zipvoice`) and a prebuilt distill-int8 bundle. Unlike VieNeu (ADR-028: estimated 1.5-2 days for a bespoke C++/JNI bridge), there is no new native code.
+3. **The path has been walked publicly.** A Vietnamese ZipVoice fine-tune exists (`dinhphuongvn/text_to_speech_Vietnamese`) with the `run_finetune.sh` and `prepare_dataset.py` scripts, so the recipe is not speculative.
+
+Two real caveats, neither fatal:
+
+- **The tokenizer drags espeak back in.** The default `EmiliaTokenizer` uses `piper_phonemize` + espeak-ng for English, and `EspeakTokenizer` covers "any other language" via `--lang vi` — which is GPL-3.0, i.e. ADR-031 again. The mitigation is to fine-tune with a **character-level tokenizer and our own `tokens.txt`**: Vietnamese orthography is close to phonemic and tone is a diacritic, so characters carry most of what phonemes would. Whether sherpa-onnx's ZipVoice path tolerates a model without `espeak-ng-data` is the one thing the gate experiment must check.
+- **Apache-2.0 weights, NC training data.** The released checkpoints are trained on **Emilia (CC-BY-NC)**. The Apache-2.0 grant covers the weights as the authors' assertion; it cannot relicense Emilia. The LibriTTS-trained checkpoints use CC-BY-4.0 data but are English-only, so cross-lingual transfer to VI is less certain. **This is the question ADR-029 has to rule on**, and it should be asked before, not after, a fine-tune lands.
+
+### Revised TTS ladder
+
+| option | few-step | runtime cost | licence path | data |
+|---|---|---|---|---|
+| **ZipVoice-Distill fine-tune** | yes, from released weights | none — already shipped | Apache-2.0 base, Emilia question to resolve | ~8 h CV + FLEURS |
+| character-level VITS | yes (1-NFE) | ONNX export, new path | clean throughout | ~8 h CV + FLEURS |
+| Supertonic distillation | would be | existing | OpenRAIL-M, no training code | n/a |
+| Piper VITS | yes | existing AAR | GPL espeak frontend | blocked |
+
+**The gate experiment is now ~2 GPU-days instead of a research project:** fine-tune ZipVoice-Distill on the CC0 Common Voice Vietnamese slice for ~10k iterations, then compare 4 steps against Supertonic's 5 steps on the same listening criteria we already use. If Common Voice's varied microphones cap the quality, that is learned in two days rather than three weeks — and it is the honest test of whether "few-step plus licence-clean" is reachable for Vietnamese at all.
