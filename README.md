@@ -16,7 +16,7 @@ This repository is the **host-side track** — the benchmark harness and the pub
 | `voices/` | Piper TTS voice models (e.g. `en_US-lessac-medium`). |
 | `bench/` | Benchmark harness: candidate adapters, scorer, eval-manifest schema, data prep. |
 | `docs/benchmark/` | Published v1 results, the Typst report and its charts. |
-| `docs/reference/` | Benchmarking plan (corpus catalog), denoising gate, beam-sweep aggregate. |
+| `docs/reference/` | Measurement pages: corpus catalog, denoising gate, beam-sweep aggregate, VAD pause distribution, endpointing gate, competitive/literature context, UX review corpus, training feasibility, AI Hub capability, Phase-3 requirements. Index in `docs/reference/README.md`. |
 | `docs/decisions/` | The public register: ADR-032 (MT model choice) and the open parameters measured here. |
 | `.kavi.yaml` | The published gates and claims — the public half of the split configuration. |
 | `eval_data/` | Generated eval audio / downloaded corpora used by the harness. |
@@ -54,4 +54,10 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/) and 
 
 ## Status
 
-Early-stage prototype. The prior implementation is archived in `aivoice-2026/archive/`; the v0 benchmark harness lives in `bench/`. Application source (`src/`) is still to be scaffolded.
+Host-side track, actively measured. The prior implementation is archived in `aivoice-2026/archive/`; the v0 benchmark harness lives in `bench/`; application source is in the private `kavi-android` repository.
+
+The on-device turnaround gate is **met and measured** — 1849.4 ms median, 10/10 runs inside the 2.0 s budget, peak RSS 589 MB on the target phone. That figure is MT-to-first-audio measured plus 500 ms VAD and 83 ms ASR added arithmetically; a single end-to-end run of the whole chain is the open measurement and the first item in [`HANDOFF.md`](HANDOFF.md).
+
+Phase-3 prototype submission is due **13/11/2026, 23:59**. Requirements and gaps: [`docs/reference/phase3-submission-requirements.md`](docs/reference/phase3-submission-requirements.md).
+
+What is settled, what was retracted, and what to do next are in [`HANDOFF.md`](HANDOFF.md).

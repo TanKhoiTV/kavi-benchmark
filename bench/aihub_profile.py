@@ -39,6 +39,53 @@ DEFAULT_OUT = "bench-results/aihub-encoder"
 SEQ_LEN = 128
 SD8G2 = "sm8550"
 
+# ONNX TensorProto element types we can name for AI Hub.
+ONNX_DTYPES = {1: "float32", 6: "int32", 7: "int64", 10: "float16"}
+
+# Dim names -> values. Encoder graphs are batch/sequence shaped; decoder graphs
+# with a KV cache additionally carry a past length, which is the knob that sets
+# how many decode steps the profile represents.
+DEFAULT_DIMS = {
+    "batch_size": 1,
+    "sequence": SEQ_LEN,
+    "sequence_length": SEQ_LEN,
+    "encoder_sequence_length": SEQ_LEN,
+    "decoder_sequence_length": 1,
+    "past_decoder_sequence_length": 32,
+}
+
+
+def build_specs_from_onnx(
+    onnx_path: Path, overrides: dict[str, int]
+) -> dict[str, tuple[tuple[int, ...], str]]:
+    """Derive AI Hub input specs from the graph, resolving symbolic dims.
+
+    AI Hub rejects dynamic dims, so every ``dim_param`` must resolve to a number.
+    Decoder-with-past graphs expose 4 tensors per layer, which is why this is
+    derived rather than hand-written.
+    """
+    import onnx
+
+    graph = onnx.load(str(onnx_path), load_external_data=False)
+    specs: dict[str, tuple[tuple[int, ...], str]] = {}
+    for tensor in graph.graph.input:
+        shape: list[int] = []
+        for dim in tensor.type.tensor_type.shape.dim:
+            if dim.dim_param:
+                if dim.dim_param not in overrides:
+                    raise SystemExit(
+                        f"no value for symbolic dim {dim.dim_param!r} in {tensor.name}; "
+                        "pass --dim NAME=VALUE"
+                    )
+                shape.append(overrides[dim.dim_param])
+            else:
+                shape.append(dim.dim_value)
+        elem = tensor.type.tensor_type.elem_type
+        if elem not in ONNX_DTYPES:
+            raise SystemExit(f"unsupported ONNX elem_type {elem} for {tensor.name}")
+        specs[tensor.name] = (tuple(shape), ONNX_DTYPES[elem])
+    return specs
+
 
 def resolve_device(hub_mod, needle: str):
     """Pick the first device matching ``needle`` in its name or attributes.
@@ -108,6 +155,18 @@ def main() -> int:
         help="device name or attribute substring; default targets sm8550 (SD8G2)",
     )
     parser.add_argument("--out", default=DEFAULT_OUT, help="result directory")
+    parser.add_argument(
+        "--specs-auto",
+        action="store_true",
+        help="derive input specs from the ONNX graph (needed for the 26-input decoder)",
+    )
+    parser.add_argument(
+        "--dim",
+        action="append",
+        default=None,
+        metavar="NAME=VALUE",
+        help="override a symbolic dim for --specs-auto",
+    )
     parser.add_argument("--name", default="opus-mt-vi-en-encoder", help="model name")
     parser.add_argument(
         "--model-id",
@@ -155,10 +214,27 @@ def main() -> int:
     # the ONNX (int64 here), while the calibration set stays float32 - the two
     # serve different stages. --truncate_64bit_io then casts the IO to int32
     # for HTP, which has no 64-bit integer tensors.
-    input_specs = {
-        "input_ids": ((1, SEQ_LEN), "int64"),
-        "attention_mask": ((1, SEQ_LEN), "int64"),
-    }
+    if args.specs_auto:
+        overrides = dict(DEFAULT_DIMS)
+        for item in args.dim or []:
+            name, _, value = item.partition("=")
+            if not name or not value:
+                raise SystemExit(f"--dim expects NAME=VALUE, got {item!r}")
+            try:
+                overrides[name] = int(value)
+            except ValueError:
+                raise SystemExit(
+                    f"--dim value must be an integer, got {item!r}"
+                ) from None
+        input_specs = build_specs_from_onnx(onnx_path, overrides)
+        print(f"input specs (auto, {len(input_specs)} tensors):")
+        for spec_name, spec in input_specs.items():
+            print(f"  {spec_name}: {spec}")
+    else:
+        input_specs = {
+            "input_ids": ((1, SEQ_LEN), "int64"),
+            "attention_mask": ((1, SEQ_LEN), "int64"),
+        }
     calibration_data = None
     if not args.fp16:
         if args.dataset_id:
