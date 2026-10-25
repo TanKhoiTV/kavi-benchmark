@@ -1,25 +1,31 @@
-"""The lane matrix: what each of the eight T4 lanes trains.
+"""The lane matrix: what each of the fine-tune lanes trains.
 
-Eight T4s across four accounts is **four concurrent sessions of 2xT4**, not one
-eight-way job — there is no network between accounts, so the parallelism has to
-be across configurations. Two ways to spend it:
+Accounts × 2xT4 is *their* concurrent sessions, not one big job — there is no
+network between accounts, so the parallelism has to be across configurations. Two
+ways to spend it:
 
   * one job per account on 2xT4 (data-parallel DDP) — finishes each config
     sooner, explores fewer of them;
-  * two independent jobs per account, one T4 each — explores twice as many
+  * two or more independent jobs per account, one T4 each — explores more
     configurations in the same wall clock.
 
-`mode` below is the second. A 77M Marian model gets little from PCIe DDP (no
+`launch.py` uses the second. A 77M Marian model gets little from PCIe DDP (no
 NVLink on Kaggle), and the open questions here are *which* configuration wins,
-not how fast one finishes. Passing `--ddp` to the launcher switches an account
-to the first mode if a lane turns out to need it.
+not how fast one finishes. `--ddp` switches an account to the first shape if a
+lane turns out to need it.
+
+Account labels are not fixed here: lanes are distributed over whatever accounts
+`training/accounts.toml` actually holds, in file order, so adding the third and
+fourth teammate's token re-balances the sweep without renaming anything.
 
 Every lane trains the same prepared corpus (``train_mix.tsv``) unless it names a
-different ``--train`` file; the sweep varies the things the plan says are open —
+different ``--train`` file; the sweep varies the things the plan leaves open —
 learning rate, schedule length, and the length penalty — not the data.
 """
 
 from __future__ import annotations
+
+from collections.abc import Sequence
 
 LANES: dict[str, dict] = {
     # Two baseline lanes at the conventional Marian fine-tune rate.
@@ -68,22 +74,27 @@ LANES: dict[str, dict] = {
     },
 }
 
-# Deterministic assignment: two lanes per account, so one account's pair differs
-# as much as possible (baseline plus a probe) rather than both being adjacent.
+# The nominal plan, used only for prose and tests: four accounts, two lanes each.
 ACCOUNTS = ("m1", "m2", "m3", "m4")
 
 
-def schedule() -> dict[str, list[str]]:
+def schedule(accounts: Sequence[str] | None = None) -> dict[str, list[str]]:
     """Account -> the lanes it runs, in order.
 
     Interleaved rather than sliced: with a contiguous split, one account gets
     both brevity lanes and another both learning-rate extremes, so a single
-    account dying loses a whole comparison.
+    account dying loses a whole comparison. Fewer accounts means more lanes each,
+    still interleaved, so the highest-value lanes come first on every account.
     """
     names = list(LANES)
-    return {acct: names[i :: len(ACCOUNTS)] for i, acct in enumerate(ACCOUNTS)}
+    accts = list(accounts) if accounts else list(ACCOUNTS)
+    if not accts:
+        return {}
+    return {acct: names[i :: len(accts)] for i, acct in enumerate(accts)}
 
 
 if __name__ == "__main__":
-    for acct, lanes in schedule().items():
-        print(f"{acct}: {', '.join(lanes)}")
+    import sys
+
+    for account, lanes in schedule(sys.argv[1:] or None).items():
+        print(f"{account}: {', '.join(lanes)}")
