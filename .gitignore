@@ -61,3 +61,6 @@ assets/noise/rirs/
 # macOS / IDE local files
 .DS_Store
 .idea/
+
+# Kaggle credentials for the training lanes — never committed (see training/accounts.toml.example)
+training/accounts.toml

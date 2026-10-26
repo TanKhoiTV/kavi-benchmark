@@ -8,5 +8,15 @@ These are **no longer current** but are kept for the content they still contribu
 | `benchmarking-todo.md` | The v0 harness execution checklist (implemented) | Historical checklist; the on-device rows now point at `kavi-android` |
 | `denoising-gate-results.md` | One-off host-side gate result | Wiener-adoption evidence for the on-device denoiser record (ADR-018) |
 | `beam-sweep-host-aggregate.md` | Citable reduction of the host beam sweep (raw output is gitignored) | Quality-vs-latency evidence for open parameter #6 (MT beam width) |
+| `aihub-capability-review.md` | Second look at Qualcomm AI Hub after the earlier dismissal | Why AI Hub is still not a latency budget line but is a portability and quantization-QA lab, and the four cheap actions it enables before 13/11 |
+| `training-feasibility.md` | What a free-compute budget (Kaggle T4x2, Colab, rented hours) can actually train | Which candidates fit the Phase-3 window, the VITS-is-1-NFE correction, and why MT punctuation is a latency lever; §7-8 give the three-account arithmetic and the lane plan |
+| `phase3-submission-requirements.md` | Phase-3 brief and submission template read for operative requirements | Deadline, scoring pillars, mandatory items, and the gaps they expose |
+| `translation-ux.md` | Review corpus of shipping translation apps, read for what users actually punish | The UX levers that cost no model budget, and the argument for recovering quality after the gate instead of before it |
+| `competitive-context.md` | External context gathered after the latency design was settled | RTranslator's actual defaults, where our streaming design sits in the simultaneous-translation literature, the endpointing evidence, and the contest field |
+| `endpointing-gate.md` | Test of whether the transcript can carry the endpointing decision | Why a text-only gate does not recover the VAD latency, and the corrected severity of a turn split |
+| `pause-distribution.md` | Measured intra-utterance pause distribution behind `vad_speech_timeout_ms` | Why 300 ms is unsafe, why 500 ms already truncates, and why the timeout cannot be raised |
+| `mt-finetune-data-plan.md` | The data plan for the one training lane that can land before 13/11 | Corpus mix under the licence gate, the held-out domain eval set, and the objective — reframed after 100-item measurement withdrew the punctuation objective and found verbosity instead |
 
 Moved out during the 2026-10 re-organisation: `phase-4-qnn-plan.md` and `rtranslator-comparison.md` → `kavi-android/docs/reference/`; `contest-info.md` and `additional-reading.md` → `aivoice-2026`. Nothing was lost, and nothing was copied twice.
+
+See also: the repository-level [`HANDOFF.md`](../../HANDOFF.md) for the current state, decisions and next steps.

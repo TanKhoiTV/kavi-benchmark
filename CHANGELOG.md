@@ -18,6 +18,9 @@
 - **bench:** Guard peak_ram_mb against missing resource module on Windows (#80)
 - **qnn:** Use repo-root-relative paths in calibration input lists (#85)
 - **changelog:** Stop duplicating the PR link in generated entries([#127](https://github.com/TanKhoiTV/kavi-benchmark/pull/127))
+- **bench:** Fail with a message when a --dim value is not an integer
+- **training:** Authenticate with API tokens and read the real quota
+- **training:** Make the dataset upload and the kernel mount actually work
 
 ### Documentation
 
@@ -68,6 +71,20 @@
 - **agents:** Describe the benchmark track, not the pre-move layout([#149](https://github.com/TanKhoiTV/kavi-benchmark/pull/149))
 - Give the tracked docs one shape and guard it([#153](https://github.com/TanKhoiTV/kavi-benchmark/pull/153))
 - **adr:** Pin Opus-MT vi<->en as the translation baseline([#155](https://github.com/TanKhoiTV/kavi-benchmark/pull/155))
+- **bench:** Rerun the beam sweep on the guarded decode path([#162](https://github.com/TanKhoiTV/kavi-benchmark/pull/162))
+- **bench:** Record the MT encoder's HTP profile([#163](https://github.com/TanKhoiTV/kavi-benchmark/pull/163))
+- Record the competitive and literature context for the latency design
+- Read the review corpus for the UX half of perceived latency
+- Record the Phase 3 submission requirements and the gaps they expose
+- Research the free-compute training path
+- Work the three-account compute arithmetic and lane plan
+- Check dataset licences, and correct the ZipVoice dismissal
+- Give AI Hub a second look and narrow the dismissal
+- Add the handoff snapshot and make the intro honest
+- Run the doc checker over the handoff file
+- **bench:** Plan the MT fine-tune data against the measured baseline
+- **bench:** Count the FLEURS train split at fetch time, not from memory
+- **decisions:** Price beam=4 on the device for open parameter #6
 
 ### Features
 
@@ -85,6 +102,11 @@
 - **ci:** Assert the public boundary in make check([#137](https://github.com/TanKhoiTV/kavi-benchmark/pull/137))
 - **bench:** Add M2M-100, Moonshine, Zipformer and Hy-MT candidates with v1 benchmark results([#124](https://github.com/TanKhoiTV/kavi-benchmark/pull/124))
 - **bench:** Port the VAD noise benchmark onto the post-move layout([#151](https://github.com/TanKhoiTV/kavi-benchmark/pull/151))
+- **bench:** Size the decode cap from the input, not the model([#161](https://github.com/TanKhoiTV/kavi-benchmark/pull/161))
+- **bench:** Derive AI Hub input specs from the ONNX graph
+- **bench:** Justify vad_speech_timeout_ms from measured pause distributions
+- **bench:** Test whether a text gate can replace the silence timeout
+- **training:** Set up the MT fine-tune lanes across four Kaggle accounts
 
 ### Miscellaneous
 
