@@ -39,8 +39,31 @@ Learning Evaluation of Universal Representations of Speech").
 Copyright (c) Google LLC. Used under CC-BY 4.0.
 
 -------------------------------------------------------------------------------
-Fetching
+Vietnamese ASR checkpoint (shipped in the app)
 -------------------------------------------------------------------------------
+
+Artifact:       zzasdf/viet_iter3_pseudo_label
+                (icefall Zipformer transducer, int8 ONNX: encoder/decoder/joiner
+                + tokens.txt), fetched at build time, not vendored here
+License:        Apache License, Version 2.0
+                https://www.apache.org/licenses/LICENSE-2.0
+Upstream:       https://huggingface.co/zzasdf/viet_iter3_pseudo_label
+Pinned rev:     lastModified 2025-07-24 (pin a commit hash when vendoring)
+
+Provenance of the training data: this checkpoint was trained on GigaSpeech 2,
+which its publishers release under Apache-2.0. That corpus is built from
+publicly available YouTube audio, so the licence we rely on is the publisher's
+grant over the packaged corpus rather than a clean-room recording campaign.
+Stated here rather than left implicit, because it is the kind of thing a reader
+of a reproduction package should be able to find without asking.
+
+Note: the earlier 30M Vietnamese checkpoint used during development was
+CC-BY-NC-ND-4.0 and is not shipped or redistributed; no derived artifacts of it
+are included in this repository.
+
+-------------------------------------------------------------------------------
+Fetching
+------------------------------------------------------------------------------
 
 The artifacts above are intentionally not committed to this repository.
 
