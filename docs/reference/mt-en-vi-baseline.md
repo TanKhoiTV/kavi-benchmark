@@ -119,6 +119,22 @@ Quality is not marginal — it is correct translation:
 5. **Long utterances are the latency risk**: 21-word input gives p95 5.0 s, so the clause-level cut
    policy is what keeps MT inside budget, not the model choice.
 
+### Through the app's own bridge (the numbers the app will actually see)
+
+Re-measured inside the APK with `MtDirectionTest`, which uses `Ct2Translator`'s
+native bridge rather than the host harness — same 100 register pairs, 4 threads, clause-level
+decode with the two-tier cut policy:
+
+| direction | model | p50 | p95 | corpus BLEU vs register gold | peak RSS |
+| --- | --- | --- | --- | --- | --- |
+| VI→EN | Opus-MT vi→en | **126 ms** | 368 ms | 20.85 | 299 MB |
+| EN→VI | M2M-100 418M | **570 ms** | 1029 ms | **21.32** | 805 MB |
+
+Two things this caught that the host harness could not: the forced `__vi__` prefix and the `</s>`
+token arrive as decode steps, so without filtering they would be handed to TTS and spoken; and
+register sentences are far cheaper than FLEURS ones (VI→EN p50 126 ms here against 507 ms on
+22-word FLEURS input), which matters because the earlier budget arithmetic used the FLEURS figure.
+
 ### Integration cost
 
 The app must send the `__en__` source token and `__vi__` target prefix, so `Ct2Translator` needs
