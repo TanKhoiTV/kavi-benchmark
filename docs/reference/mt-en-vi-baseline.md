@@ -82,6 +82,49 @@ proper nouns, not a decode-tuning problem.
 This does not change the submission plan: EN→VI ships, guarded and disclosed. It does change
 what we claim about it.
 
+## M2M-100 en→vi on device: the direction is salvageable
+
+Measured 2026-10-27 with `bench/mt/ct2_bench` on the Meizu 21 Note (phone free memory 6.8 GB;
+constraints deliberately loosened for this run — turnaround ≤ 5 s, peak memory ≤ 6 GB). Inputs are
+the **organizers' 100 gold pairs**, so this is the contest register and the BLEU is against their
+Vietnamese references. `target_prefix=__vi__`, source tokens carry `__en__`, 4 intra-threads.
+
+| run | p50 | p95 | max | peak RSS | corpus BLEU vs register gold |
+| --- | --- | --- | --- | --- | --- |
+| M2M-100, beam 1 | **577 ms** | 1061 ms | 1790 ms | **646 MB** | **21.51** |
+| M2M-100, beam 5 | 1050 ms | 1940 ms | 3368 ms | 678 MB | 20.87 |
+| M2M-100, beam 5, 21-word sentences | 2428 ms | 5035 ms | 5035 ms | 698 MB | — |
+
+Quality is not marginal — it is correct translation:
+
+| English | M2M beam 5 | organizers' gold |
+| --- | --- | --- |
+| Could you explain that again more slowly? | Bạn có thể giải thích điều này một lần nữa chậm hơn không? | Anh giải thích lại chậm hơn được không? |
+| Which room are you in so I can check? | Bạn đang ở trong phòng nào để tôi có thể kiểm tra? | Anh đang ở phòng nào để tôi kiểm tra? |
+| How long until the drinks are ready? | Bao lâu cho đến khi đồ uống đã sẵn sàng? | Bao lâu thì có đồ uống? |
+
+### What this settles
+
+1. **EN→VI ships on M2M-100, not Opus-MT.** 21.51 BLEU on the register with no degeneration against
+   Opus's 8.20 on FLEURS *and* clause-length loops. ADR-032 pinned the direction but its own
+   "M2M is the named successor" clause is now the operative decision for this leg.
+2. **Beam 1 beats beam 5 here** (21.51 vs 20.87) at half the latency. Unlike VI→EN, this direction
+   does not need beam search — measure, do not assume, one direction's tuning does not transfer.
+3. **Latency fits the loosened budget and is borderline for the real one.** Register MT p50 577 ms
+   (RTF 0.17 against the 3.34 s mean register clip) leaves the 2.0 s gate reachable only with VAD +
+   ASR + overlapped TTS: 500 (VAD) + ~250 (ASR) + 577 (MT) + 710–1206 (first TTS chunk) ≈ 2.0–2.5 s.
+4. **Memory is affordable but not free**: 646–698 MB against Opus-MT's 211 MB. The full stack
+   (ASR ~450 + MT ~690 + TTS ~400) lands near 1.5 GB, which is above ADR-016's 1.16 GB figure and
+   far below the 6 GB ceiling this run used.
+5. **Long utterances are the latency risk**: 21-word input gives p95 5.0 s, so the clause-level cut
+   policy is what keeps MT inside budget, not the model choice.
+
+### Integration cost
+
+The app must send the `__en__` source token and `__vi__` target prefix, so `Ct2Translator` needs
+target-prefix support — a native-bridge change rather than a config flag. `ct2_bench` already
+exercises this path (`argv[7]`), so the device harness is ahead of the app here.
+
 ## Reproduce
 
 ```bash
