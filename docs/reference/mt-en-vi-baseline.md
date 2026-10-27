@@ -41,6 +41,47 @@ proper sweep says otherwise. This is a recommendation, not yet a decision — it
 decode configuration in `kavi-tuning.yaml`, so it should be ratified on the device in phase
 2 (register-length clauses, real audio) rather than on FLEURS.
 
+## The register-length check, which qualifies everything above
+
+Those BLEU figures are measured on FLEURS sentences (median ~22 English words in, ~40
+Vietnamese tokens out). The app decodes **clauses**, so the same model was run on short
+expressions (3–11 words) — and there it degrades structurally.
+
+On the device (`ct2_bench`, beam 5, 256-token cap) five unique short clauses produced about
+**200 output tokens each, 4 of 5 hitting the cap**. On the host the same inputs hit their
+`guarded_length` cap of 48 tokens — that is, the host was **truncating** the degeneration
+rather than avoiding it, which is what made the aggregate BLEU look tolerable: the harness
+caps output length in proportion to source length (`bench/decode.py`).
+
+Raising the guard does not cure it. With the cap raised to 256 to expose the behaviour:
+
+| guard | sample behaviour |
+| --- | --- |
+| 1.1 / ngram 3 (current) | 72, 158, 256 tokens on three inputs; `du du du khách khách du khách` |
+| 1.5 / ngram 2 | 38, 38, 256 tokens; loops reduced on two, one unchanged |
+| 2.0 / ngram 2 | 37, 27, **256 tokens** |
+
+At least one input (`fellow wrestlers also paid tribute to luna`) degenerates to the cap at
+every setting, so this is a **capability floor** of the model on short input containing
+proper nouns, not a decode-tuning problem.
+
+### What this means for the submission
+
+1. **Do not read 8.20 as the register figure.** At clause length the direction is usable but
+   unreliable, and the honest statement is "MT EN→VI degenerates on a material fraction of
+   short inputs".
+2. **Keep the length guard.** `guarded_length` in `ct2_stream_jni.cpp` bounds the damage: the
+   user hears a truncated sentence instead of 256 tokens of looped Vietnamese. It is a
+   mitigation, not a fix.
+3. **Raise the penalty to 1.5 / ngram 2 in the app** and have phase 2 add a repetition
+   detector that retries once at 2.0. Cheap, in-app, and testable on register audio.
+4. **M2M-100 becomes the EN→VI successor for the finale**, on this evidence rather than on
+   FLEURS BLEU: it covers en→vi, it is the only candidate covering VI↔ZH and VI↔KO, and the
+   register-level quality floor is now the binding constraint on this leg.
+
+This does not change the submission plan: EN→VI ships, guarded and disclosed. It does change
+what we claim about it.
+
 ## Reproduce
 
 ```bash
