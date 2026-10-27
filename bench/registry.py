@@ -8,7 +8,7 @@ from .candidates.moonshine_asr import (
     MoonshineTinyEnCandidate,
     MoonshineTinyViCandidate,
 )
-from .candidates.opusmt_mt import OpusMTMTCandidate
+from .candidates.opusmt_mt import OpusMTEnViCandidate, OpusMTMTCandidate
 from .candidates.piper_tts import PiperTTSCandidate
 from .candidates.qnn_opusmt_mt import QnnOpusMTMTCandidate
 
@@ -36,6 +36,7 @@ REGISTRY: dict[str, RegistryEntry] = {
     ZipformerViCandidate.id: (ZipformerViCandidate, None, {"beam_size": 5}),
     ZipformerEnCandidate.id: (ZipformerEnCandidate, None, {"beam_size": 4}),
     OpusMTMTCandidate.id: (OpusMTMTCandidate, None, {"beam_size": 5}),
+    OpusMTEnViCandidate.id: (OpusMTEnViCandidate, None, {"beam_size": 5}),
     M2M100MTCandidate.id: (M2M100MTCandidate, None, {"beam_size": 4}),
     HyMT15MTCandidate.id: (HyMT15MTCandidate, None, {"beam_size": 5}),
     PiperTTSCandidate.id: (PiperTTSCandidate, None, {}),

@@ -22,6 +22,20 @@ ct2_path = "opus-mt-vi-en-ct2/model.bin"
 ct2_sha256 = "5e2c12db02a70df47266bda2bec237a05cbbadc02e636d59603647d05b5ec379"
 ct2_size = 73711395
 
+[models.opus_mt_en_vi]
+# The EN→VI leg. Pinned but unmeasured until 2026-10-27 (ADR-032 recorded the
+# direction as "pinned unmeasured"); the FLEURS en→vi measurement closes that.
+repo = "Helsinki-NLP/opus-mt-en-vi"
+revision = "989c9fb9ec63987901022baf0182dcec3e149be6"
+# Upstream PyTorch checkpoint (downloaded to <out>/opus-mt-en-vi-src/).
+source_path = "opus-mt-en-vi-src/pytorch_model.bin"
+source_sha256 = "50eec80a5807001b9efdf06e76a2d3a7ed61d798af6bc96539ea7679f7d97a99"
+source_size = 288866577
+# CTranslate2 int8 conversion (written to <out>/opus-mt-en-vi-ct2/).
+ct2_path = "opus-mt-en-vi-ct2/model.bin"
+ct2_sha256 = "1d18bc1c4fa11ac7535cf62e9e4cf2fc437666368e9c2e15263fee0dea101b26"
+ct2_size = 73683315
+
 [data.fleurs]
 dataset = "google/fleurs"
 revision = "70bb2e84b976b7e960aa89f1c648e09c59f894dd"

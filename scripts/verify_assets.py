@@ -28,23 +28,27 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    model = lock["models"]["opus_mt_vi_en"]
     fleurs = lock["data"]["fleurs"]
 
-    checks: list[tuple[str, Path, str, int | None]] = [
-        (
-            "model source",
-            args.models_dir / model["source_path"],
-            model["source_sha256"],
-            model["source_size"],
-        ),
-        (
-            "model ct2",
-            args.models_dir / model["ct2_path"],
-            model["ct2_sha256"],
-            model["ct2_size"],
-        ),
-    ]
+    checks: list[tuple[str, Path, str, int | None]] = []
+    for key, model in sorted(lock["models"].items()):
+        label = key.replace("opus_mt_", "").replace("_", "→")
+        checks.append(
+            (
+                f"{label} source",
+                args.models_dir / model["source_path"],
+                model["source_sha256"],
+                model["source_size"],
+            )
+        )
+        checks.append(
+            (
+                f"{label} ct2",
+                args.models_dir / model["ct2_path"],
+                model["ct2_sha256"],
+                model["ct2_size"],
+            )
+        )
     for lang, entry in sorted(fleurs["parquets"].items()):
         checks.append(
             (
