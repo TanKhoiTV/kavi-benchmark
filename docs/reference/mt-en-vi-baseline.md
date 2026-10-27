@@ -135,6 +135,31 @@ token arrive as decode steps, so without filtering they would be handed to TTS a
 register sentences are far cheaper than FLEURS ones (VI→EN p50 126 ms here against 507 ms on
 22-word FLEURS input), which matters because the earlier budget arithmetic used the FLEURS figure.
 
+## Text conditioning is a stage, not a detail
+
+The first end-to-end run of the app pipeline exposed something no per-stage benchmark showed:
+MT degrades badly on **ASR-shaped text**. Measured on the 100 register pairs, VI→EN, greedy:
+
+| input shape | corpus BLEU | mean hypothesis words |
+| --- | --- | --- |
+| gold text (cased, punctuated) | **20.32** | 11.7 |
+| ASR-shaped: UPPERCASE, no punctuation | **0.14** | 88.9 |
+| UPPERCASE + terminal period | 0.59 | 25.9 |
+| lowercased, no punctuation | 4.97 | 41.7 |
+| **lowercased + terminal period** | **11.51** | 15.8 |
+
+Two effects, both large and both cheap to fix:
+
+1. **Casing costs ~20 BLEU.** Uppercase input — which is exactly what both ASR checkpoints
+   emit — drives Marian into 89-word repetition loops. Lowercasing alone recovers most of it.
+2. **The terminal stop is worth ~7 BLEU** and halves output length (4.97 → 11.51, 41.7 → 15.8
+   words). ASR produces no punctuation, so the pipeline appends a period when the transcript
+   does not already end in `.?!`.
+
+`SpeechPipeline` applies both before tokenising. The residual gap (11.51 against 20.32 on clean
+text) is what punctuation restoration would buy, and it is now a measured target rather than a
+suspicion.
+
 ### Integration cost
 
 The app must send the `__en__` source token and `__vi__` target prefix, so `Ct2Translator` needs
