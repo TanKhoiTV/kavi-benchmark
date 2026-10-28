@@ -223,3 +223,19 @@ M2M, moving VI→EN to it means **one model for both directions**: one tokenizer
 scheme, and Opus-MT (211 MB resident) is dropped instead of co-resident with M2M (~750 MB).
 
 Remaining cost is on disk: M2M is 490 MB against Opus's 73 MB.
+
+## The terminal mark a question deserves
+
+ASR output carries no punctuation, so the pipeline appends a terminal mark before MT. Always
+appending `.` tells the model that a question is a statement, which is measurable:
+
+| VI->EN, greedy, 100 register pairs | BLEU |
+| --- | --- |
+| always `.` (what shipped) | 19.92 |
+| mark chosen from the final particle (`không`, `chứ`, `nhỉ`, `hả`, `sao`, `chưa`, `gì`, `à`, `ạ`) | **21.39** |
+| gold punctuation | 25.55 |
+
+The rule fires on 21/100 utterances where gold has 35/100 questions and is correct on 86/100, so
+this is a partial but free recovery of the punctuation gap — the same +1.47 BLEU that a beam
+sweep costs 217 ms for. Gold punctuation still leads by 4.2 BLEU, which is the size of the prize
+the missing Vietnamese punctuation model is holding.
