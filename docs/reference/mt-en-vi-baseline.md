@@ -176,3 +176,50 @@ uv run python -m bench.run --manifest eval_data/mt_en_vi_eval_manifest.json \
     --config-override '{"beam_size": 5}'
 make verify-assets                            # 6/6 expected
 ```
+
+---
+
+# VI→EN on ASR-shaped text: M2M beats Opus by 9.8 BLEU
+
+The pipeline feeds MT lowercase, unpunctuated run-ons with an appended stop (above). That is
+exactly the input Opus-MT degrades on, so the obvious fix was not more punctuation heuristics
+but a different model. 100 register pairs, corpus BLEU:
+
+| model | input | BLEU | mean hyp words | MT p50 on device |
+| --- | --- | --- | --- | --- |
+| Opus-MT vi→en | clean, cased, punctuated (ceiling) | **26.05** | 9.3 | 126 ms |
+| Opus-MT vi→en | ASR-shaped (what ships today) | **13.83** | 13.0 | 162 ms |
+| **M2M-100 418M** | ASR-shaped | **23.66** | 7.5 | ~410 ms first clause |
+| M2M-100 418M | clean | 28.54 | 7.9 | — |
+
+M2M on degraded input nearly matches Opus on clean input, and produces **42% fewer words**
+(7.5 vs 13.0) — fewer words is also less TTS audio on the critical path.
+
+## Punctuation heuristics do not close the gap
+
+| input shaping | BLEU |
+| --- | --- |
+| period only (current) | 13.83 |
+| comma every 3 words | 8.33 |
+| comma every 4 words | 10.05 |
+| comma every 5 words | 12.30 |
+| comma before conjunctions (`và`, `nhưng`, `vì`, `nếu`, …) | **15.03** |
+| ceiling with real punctuation | 26.05 |
+
+Mechanical commas make it worse; grammatical guesses buy +1.2. This confirms punctuation
+restoration would need a model, and that M2M is the cheaper answer to the same problem.
+
+## What it costs in the pipeline
+
+VI→EN, in-app, VAD-segmented, 5 diffusion steps, 3 MT threads:
+
+| MT model | first audio p50 | p95 | BLEU |
+| --- | --- | --- | --- |
+| Opus-MT | 1320 ms | 1386 ms | 13.83 |
+| **M2M-100** | **1588 ms** | 1593 ms | **23.66** |
+
+**+268 ms for +9.8 BLEU, still 400 ms under the 2.0 s gate.** And because EN→VI already needs
+M2M, moving VI→EN to it means **one model for both directions**: one tokenizer, one prefix
+scheme, and Opus-MT (211 MB resident) is dropped instead of co-resident with M2M (~750 MB).
+
+Remaining cost is on disk: M2M is 490 MB against Opus's 73 MB.
