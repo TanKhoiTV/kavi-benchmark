@@ -1,8 +1,14 @@
 """Submit the MT encoder to Qualcomm AI Hub for compilation and HTP profiling.
 
-Dev-time tooling only: requires `uv pip install qai-hub` and a configured API
+Dev-time tooling only: requires the `qairt` dependency group and a configured API
 token (`qai-hub configure --api_token <token>`). Nothing here runs at app
-runtime, and no project dependency is added for it.
+runtime, and the group stays opt-in because it drags in boto3 and h5py that the
+harness itself never uses.
+
+Installing it ad-hoc is a trap: `uv pip install qai-hub` puts a package in the
+venv that is absent from `uv.lock`, so the next `uv run` - including the one in a
+pre-commit hook - syncs the venv to the lockfile and silently removes it. That
+happened on 2026-10-29; the group exists so it cannot happen again.
 
 Why this exists
 ---------------
@@ -14,9 +20,8 @@ Snapdragon 8 Gen 2 silicon - the target SoC.
 
 Usage
 -----
-    uv pip install qai-hub
-    qai-hub configure --api_token "$QAI_HUB_API_TOKEN"
-    uv run python bench/aihub_profile.py
+    uv run --group qairt qai-hub configure --api_token "$QAI_HUB_API_TOKEN"
+    uv run --group qairt python bench/aihub_profile.py
 
 The compile job targets a QNN context binary; the profile job reports latency
 per layer. Results are written to `bench-results/aihub-encoder/`.

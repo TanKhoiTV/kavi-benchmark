@@ -52,8 +52,8 @@ Every one of the 224 profiled ops reports `compute_unit: NPU`. Had any op fallen
 ## Reproduce
 
 ```bash
-uv pip install qai-hub
-uv run python bench/aihub_profile.py \
+uv run --group qairt qai-hub configure --api_token "$QAI_HUB_API_TOKEN"
+uv run --group qairt python bench/aihub_profile.py \
     --onnx ../kavi-android/models/qnn/opus-mt-vi-en/encoder_model.onnx \
     --calib <dir with ids_<n>.raw / mask_<n>.raw>
 ```

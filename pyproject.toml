@@ -72,3 +72,10 @@ testpaths = ["tests"]
 
 [dependency-groups]
 dev = ["pre-commit>=4.6.0", "ruff>=0.15.18", "datasets", "pytest>=9.1.1"]
+# AI Hub / QAIRT tooling. Opt-in because it drags in boto3, h5py and a
+# requests stack that the harness never uses:  uv run --group qairt python -m ...
+# It was installed ad-hoc until 2026-10-29, when a `uv run` in a pre-commit hook
+# synced the venv to the lockfile and silently removed it.
+# Pinned, not floored: the AI Hub docs record 0.56.0 and an SDK bump is a
+# deliberate change, not something a `uv sync` should decide.
+qairt = ["qai-hub==0.56.0"]
