@@ -46,7 +46,7 @@ asr:
       superseded: "zipformer-small-en-2023-06-26 (27.83% on the same gold)"
   language_detection:
     method: "argmax of mean per-token log-probability per recogniser" # ADR-033
-    status: "host-measured 97.0% correct direction on clean audio, both directions; noise and code-switching unmeasured; the on-device shim is not built"
+    status: "host-measured 97.0% correct direction on clean audio, both directions; noise and code-switching unmeasured; the Android binding exposes no per-token confidence, so direction is explicit (push-to-talk) today"
 
 # ── MT (M2M-100, ADR-032) ──────────────────────────────────────────────────
 #
@@ -121,7 +121,7 @@ timing:
   measured_gate_compliance:
     vi-en: "92/99"
     en-vi: "11/99"
-  open_gate: "EN->VI misses 2.0 s. The lever with measured support is speculation on the near-end prefix (437-518 ms at 15% wasted synthesis), then the TTS step count."
+  open_gate: "EN->VI misses 2.0 s. Two levers have measured support - starting the chain before the endpoint closes, and the TTS step count - and both must not regress the 200 calibration clips. The gate arithmetic behind the first is private-track material; what is public is that its gain and its wasted compute are both measured rather than assumed."
   bleu_end_to_end:
     vi-en: 22.00 # n=99, against organizer EN gold
     en-vi: 23.48 # parakeet EN ASR, against organizer VI gold

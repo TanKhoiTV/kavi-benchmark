@@ -51,7 +51,7 @@ A + B + C = 85% technical group.
 | gap | why it matters | action |
 | --- | --- | --- |
 | ~~The full chain has never been measured end to end~~ **closed 2026-10-29** | the template forbids substituting an arithmetic sum for a measurement | measured: one process, one clock, VAD in the loop, 200 organizer clips — VI→EN 1607 ms p50 / 22.00 BLEU / 92 of 99 inside the gate; EN→VI 2477 ms / 23.48 BLEU / 11 of 99 |
-| **EN→VI misses the 2.0 s gate** (successor to the row above) | it is the direction that carries the English side, and the gate is a hard published number | see [`HANDOFF.md`](../../HANDOFF.md) next steps: speculation on the near-end prefix, then the TTS step count |
+| **EN→VI misses the 2.0 s gate** (successor to the row above) | it is the direction that carries the English side, and the gate is a hard published number | see [`HANDOFF.md`](../../HANDOFF.md) next steps — two levers have measured support (start before the endpoint; TTS step count), each gated by no regression on the 200 calibration clips |
 | No live-microphone measurement | every number above is replayed register audio; the device's own mic path supplies near-silence in testing | wire `AudioRecord` → VAD → pipeline to the UI and re-measure |
 | Only one language pair | pair count is scored inside the 45% | decide whether VI↔EN alone is the honest submission, or add a second pair |
 | Hidden benchmark is 1,000 sentences/pair | the largest eval run so far is 200 pairs (100 register, 100 FLEURS) | run the larger eval and report BLEU with the metric named |
