@@ -104,6 +104,7 @@
 - **bench:** Record COMET in both directions, and index the register page
 - **adr:** Supersede the Opus-MT pin, and audit a register that had rotted
 - **bench:** The detection mechanism is biased, not just miscalibrated
+- **bench:** Prior art for the detection mechanism, and what shipping products do
 
 ### Features
 
