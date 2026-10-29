@@ -27,8 +27,9 @@ from pathlib import Path
 
 from .assets import load_lock, verify
 
-# Redundant TensorFlow copy; never read by CTranslate2.
-_SKIP_PATTERNS = ["tf_model.h5"]
+# Redundant framework copies; CTranslate2 never reads them. `rust_model.ot` is
+# the same 1.9 GB of weights as `pytorch_model.bin`, in another format.
+_SKIP_PATTERNS = ["tf_model.h5", "rust_model.ot"]
 
 
 def dirnames(key: str, entry: dict) -> tuple[str, str]:

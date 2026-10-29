@@ -36,6 +36,29 @@ ct2_path = "opus-mt-en-vi-ct2/model.bin"
 ct2_sha256 = "1d18bc1c4fa11ac7535cf62e9e4cf2fc437666368e9c2e15263fee0dea101b26"
 ct2_size = 73683315
 
+# The MT that ships, in both directions (ADR-034). One bilingual checkpoint driven
+# by a source-language token plus a target prefix, so vi->en and en->vi are the
+# same weights - which is also why the register scores in
+# docs/reference/mt-en-vi-baseline.md come from one model.
+#
+# The int8 conversion is bit-reproducible: a fresh conversion from this revision
+# produced an identical model.bin and shared_vocabulary.json (the vocabulary is
+# 18916ac6...f941, recorded here as a comment because the schema verifies the one
+# file that dominates the download). A clean clone therefore derives the exact
+# artifact that ships, rather than something merely similar.
+[models.m2m100_418m]
+label = "M2M-100 418M"
+repo = "facebook/m2m100_418M"
+revision = "55c2e61bbf05dfb8d7abccdc3fae6fc8512fd636"
+src_dir = "m2m100-418m-src"
+ct2_dir = "m2m100-418m-ct2-int8"
+source_path = "m2m100-418m-src/pytorch_model.bin"
+source_sha256 = "d907ea45e4e4b9db163382a6674f6218b3c59566fe06d77f4055c208b4e87ed1"
+source_size = 1935796948
+ct2_path = "m2m100-418m-ct2-int8/model.bin"
+ct2_sha256 = "590e9c7e229e84de8affe7b15487660a286d3d76e44a4ca10e33099b198d9a76"
+ct2_size = 490667752
+
 [data.fleurs]
 dataset = "google/fleurs"
 revision = "70bb2e84b976b7e960aa89f1c648e09c59f894dd"
@@ -53,3 +76,20 @@ path = "parquet-data/en_us/test-00000-of-00001.parquet"
 local_name = "fleurs_en_us_test.parquet"
 sha256 = "6428a4d04d3aac29e16b45e039bb1470a8bd7aa334cf92f7984c9c520d1f234d"
 size = 401722686
+
+# ── Documented, not fetched here ───────────────────────────────────────────
+#
+# Artifacts that ship but are staged by the on-device track, so this repository
+# never holds their bytes and cannot verify them. They are pinned by repository
+# and revision anyway: "the model that ships is not recorded anywhere public" was
+# the gap this file exists to close, and a name plus a revision closes most of it.
+# Digests live next to the artifact, in the app's assets/SHA256SUMS.
+
+[not_fetched.parakeet_tdt_0_6b_v2]
+label = "parakeet-tdt-0.6b-v2"
+role = "English ASR, shipped"
+upstream = "https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2"
+distribution = "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8.tar.bz2"
+licence = "CC-BY-4.0 - attribution is recorded in NOTICE"
+size_mb = 631
+why_not_fetched = "The bench harness has no parakeet adapter: the EN->VI numbers in docs/reference/mt-en-vi-baseline.md were measured through the on-device track. Adding a fetcher here without an adapter would pin bytes nothing here can run."

@@ -4,6 +4,10 @@ Checks whatever is present under ``models/`` and ``eval_data/raw/``. Missing
 files are reported but are not a hard failure by default, because the offline
 eval fallback does not need FLEURS. Use ``--strict`` to require everything.
 
+Entries under ``[not_fetched]`` are printed as ``DOC``: they are artifacts that
+ship from the on-device track, so this repository never holds their bytes and can
+only record what they are, not verify them.
+
 Exit status is non-zero when a *present* file fails verification, or when
 ``--strict`` is set and something is missing.
 """
@@ -32,7 +36,8 @@ def main() -> int:
 
     checks: list[tuple[str, Path, str, int | None]] = []
     for key, model in sorted(lock["models"].items()):
-        label = key.replace("opus_mt_", "").replace("_", "→")
+        # Entries may name themselves; the fallback only has the key to work with.
+        label = model.get("label") or key.replace("opus_mt_", "").replace("_", "→")
         checks.append(
             (
                 f"{label} source",
@@ -72,6 +77,13 @@ def main() -> int:
             failures.append(label)
 
     verified = len(checks) - len(missing) - len(failures)
+
+    # Artifacts that ship but are staged by the on-device track: listing them says
+    # they are known and pinned, not that they were checked here.
+    for key, entry in sorted(lock.get("not_fetched", {}).items()):
+        label = entry.get("label", key)
+        print(f"  {'DOC':7}  {label:14} {entry.get('upstream', '')}")
+
     print(
         f"\n{verified}/{len(checks)} verified, {len(failures)} failed, "
         f"{len(missing)} missing"
