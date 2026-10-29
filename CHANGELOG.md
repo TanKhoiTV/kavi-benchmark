@@ -103,6 +103,7 @@
 - Keep the gate arithmetic in the private track
 - **bench:** Record COMET in both directions, and index the register page
 - **adr:** Supersede the Opus-MT pin, and audit a register that had rotted
+- **bench:** The detection mechanism is biased, not just miscalibrated
 
 ### Features
 
@@ -132,6 +133,7 @@
 - **bench:** Pin and measure the EN->VI leg
 - **bench:** Score the organizer register with BLEU, chrF++ and COMET
 - **bench:** Measure what code-switching does to the confidence signal
+- **bench:** The VI-share sweep, and the bias it exposes
 
 ### Miscellaneous
 
@@ -169,6 +171,7 @@
 - **data:** Move the organizer corpus into the repo, and stop reading ~/Downloads
 - **deps:** Declare the AI Hub tooling as an opt-in qairt group
 - **assets:** Pin the MT that ships, and document the checkpoint we cannot fetch
+- **bench:** Label the register run's host decode time as a diagnostic
 
 ### Refactoring
 
