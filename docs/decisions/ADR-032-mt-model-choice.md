@@ -2,9 +2,15 @@
 
 ## Status
 
-Accepted — VI→EN is the baseline for the Phase-3 app build. EN→VI is pinned
-**unmeasured**. M2M-100 is recorded as the measured challenger and replaces this
-record if the Phase-3 gate says so.
+**Superseded 2026-10-29 by [ADR-034](ADR-034-m2m-both-directions.md).**
+
+This record pinned Opus-MT as the VI→EN baseline and named its own overturn
+condition — *"if VI→EN quality is the binding constraint, this record should be
+superseded rather than defended."* The register measurements met it: Opus-MT scores
+13.83 BLEU on the ASR-shaped input the pipeline actually produces, against M2M-100's
+23.66, and it degenerates on clause-length EN→VI input. The record is kept, not
+deleted: its reasoning and its FLEURS comparison are the baseline the successor was
+measured against, and Opus-MT is still registered in `bench/` as that baseline.
 
 ## Date
 
