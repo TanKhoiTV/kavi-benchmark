@@ -434,7 +434,12 @@ def dataset_stamp(account: dict, ref: str) -> str:
         if not parts or parts[0] != ref:
             continue
         for i, part in enumerate(parts):
-            if len(part) == 10 and part[4] == "-" and part[7] == "-" and part[:4].isdigit():
+            if (
+                len(part) == 10
+                and part[4] == "-"
+                and part[7] == "-"
+                and part[:4].isdigit()
+            ):
                 return f"{part} {parts[i + 1]}" if i + 1 < len(parts) else part
         return line.strip()
     return ""

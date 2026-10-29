@@ -536,7 +536,10 @@ def main() -> int:
     write("train_mix.tsv", mixture)
     mix_comma = sum(1 for p in mixture if is_c(p)) / max(1, len(mixture))
     mix_q = sum(1 for p in mixture if is_q(p)) / max(1, len(mixture))
-    if abs(mix_comma - args.comma_target) > 0.05 or abs(mix_q - args.question_target) > 0.10:
+    if (
+        abs(mix_comma - args.comma_target) > 0.05
+        or abs(mix_q - args.question_target) > 0.10
+    ):
         print(
             f"note: mixture landed at comma {mix_comma:.1%} / question {mix_q:.1%} "
             f"against targets {args.comma_target:.0%} / {args.question_target:.0%}; "
