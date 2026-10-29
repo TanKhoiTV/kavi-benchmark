@@ -23,6 +23,25 @@ Copyright (c) the OPUS-MT / Helsinki-NLP authors. Distributed under the
 Apache License, Version 2.0. The upstream model card is fetched alongside the
 weights at models/opus-mt-vi-en-src/README.md.
 
+In the shipped app this model is **superseded by M2M-100** (below); it remains
+the benchmark harness's baseline candidate.
+
+-------------------------------------------------------------------------------
+Facebook M2M-100 418M (the shipped translator)
+-------------------------------------------------------------------------------
+
+Artifact:       facebook/m2m100_418M
+                converted to CTranslate2 int8, one model for both directions
+License:        MIT
+                https://github.com/facebookresearch/fairseq/blob/main/LICENSE
+Upstream:       https://huggingface.co/facebook/m2m100_418M
+Paper:          Fan et al., "Beyond English-Centric Multilingual Machine
+                Translation", JMLR 2021
+
+Copyright (c) Meta Platforms, Inc. and affiliates. The model is driven with a
+source-language token plus a target-language prefix (`__vi__` / `__en__`), which
+is how one checkpoint serves both directions.
+
 -------------------------------------------------------------------------------
 FLEURS evaluation audio (Vietnamese)
 -------------------------------------------------------------------------------
@@ -62,6 +81,28 @@ CC-BY-NC-ND-4.0 and is not shipped or redistributed; no derived artifacts of it
 are included in this repository.
 
 -------------------------------------------------------------------------------
+English ASR checkpoint (shipped in the app)
+-------------------------------------------------------------------------------
+
+Artifact:       NVIDIA parakeet-tdt-0.6b-v2
+                int8 ONNX export distributed as
+                csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8
+                (encoder/decoder/joiner + tokens), fetched at build time,
+                not vendored here
+License:        Creative Commons Attribution 4.0 International (CC-BY 4.0)
+                https://creativecommons.org/licenses/by/4.0/
+Upstream:       https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2
+
+Copyright (c) NVIDIA Corporation. Trained with NVIDIA NeMo; the ONNX export is
+redistributed by the sherpa-onnx project. CC-BY 4.0 requires attribution when
+the weights are redistributed, which is why this entry exists before the
+prototype package is built rather than after.
+
+It replaces `sherpa-onnx-zipformer-small-en-2023-06-26` (Apache-2.0), which was
+measured at 27.83% WER on the organizer's English gold against parakeet's
+12.20% on the same clips. The superseded checkpoint is kept for A/B only.
+
+-------------------------------------------------------------------------------
 Fetching
 ------------------------------------------------------------------------------
 
@@ -71,9 +112,16 @@ The artifacts above are intentionally not committed to this repository.
   - FLEURS test parquets (vi_vn, en_us) .............. make data
   - Eval manifest built from those parquets .......... make bench-data
 
-All fetches are pinned to the revisions and SHA-256 digests recorded in
+All fetched artifacts are pinned to the revisions and SHA-256 digests recorded in
 `assets.lock.toml`. The FLEURS validation fixture under `tests/fixtures/` is not
 redistributed and is not currently used by the test suite.
+
+**Gap, recorded rather than implied:** M2M-100 and the parakeet checkpoint are
+the models that ship, and neither is fetched or pinned by this repository yet —
+M2M-100 is on disk under `models/` from an unpinned conversion, and parakeet is
+staged in the private on-device repository. A clean clone of this repository
+therefore cannot reproduce the shipped app's models. Pinning both in
+`assets.lock.toml` is tracked in [`HANDOFF.md`](HANDOFF.md).
 
 If you redistribute any fetched artifact, you must carry the license terms and
 attribution recorded above.
