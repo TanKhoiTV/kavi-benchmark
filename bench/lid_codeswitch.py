@@ -85,7 +85,7 @@ class Margins:
         return margin is None or abs(margin) < THIN
 
 
-def _read(path: Path) -> tuple[np.ndarray, int]:
+def read_wav(path: Path) -> tuple[np.ndarray, int]:
     import soundfile as sf
 
     samples, sr = sf.read(str(path), dtype="float32")
@@ -94,7 +94,7 @@ def _read(path: Path) -> tuple[np.ndarray, int]:
     return samples, sr
 
 
-def _load_recognizers():
+def load_recognizers():
     import sherpa_onnx
 
     def build(model_dir: Path, model_type: str | None = None):
@@ -148,13 +148,13 @@ def _decode(recognizer, samples: np.ndarray, sr: int) -> tuple[float | None, int
     return float(np.mean(probs)), len(probs)
 
 
-def _margins(vi_rec, en_rec, samples: np.ndarray, sr: int) -> Margins:
+def margins_for(vi_rec, en_rec, samples: np.ndarray, sr: int) -> Margins:
     vi_mean, vi_tokens = _decode(vi_rec, samples, sr)
     en_mean, en_tokens = _decode(en_rec, samples, sr)
     return Margins(vi_mean, en_mean, vi_tokens, en_tokens)
 
 
-def _splice(
+def splice_once(
     first: np.ndarray, second: np.ndarray, sr: int, *, ratio: float, gap_ms: int
 ) -> np.ndarray:
     """`ratio` of the total duration from `first`, the remainder from `second`.
@@ -200,7 +200,7 @@ def main() -> int:
     parser.add_argument("--out", default="bench-results/lid-codeswitch/report.json")
     args = parser.parse_args()
 
-    vi_rec, en_rec = _load_recognizers()
+    vi_rec, en_rec = load_recognizers()
     vi_paths = sorted(glob.glob(str(VI_WAVS / "*.wav")))[: args.pairs]
     en_paths = sorted(glob.glob(str(EN_WAVS / "*.wav")))[: args.pairs]
     if not vi_paths or not en_paths:
@@ -218,8 +218,8 @@ def main() -> int:
     ):
         rows = []
         for path in paths:
-            samples, sr = _read(Path(path))
-            m = _margins(vi_rec, en_rec, samples, sr)
+            samples, sr = read_wav(Path(path))
+            m = margins_for(vi_rec, en_rec, samples, sr)
             rows.append(
                 {
                     "margin": m.margin,
@@ -241,15 +241,15 @@ def main() -> int:
             expected = first_lang if ratio >= 0.5 else second_lang
             rows = []
             for vi_path, en_path in zip(vi_paths, en_paths, strict=False):
-                vi_samples, sr = _read(Path(vi_path))
-                en_samples, _ = _read(Path(en_path))
+                vi_samples, sr = read_wav(Path(vi_path))
+                en_samples, _ = read_wav(Path(en_path))
                 first, second = (
                     (vi_samples, en_samples)
                     if order == "vi-first"
                     else (en_samples, vi_samples)
                 )
-                mixed = _splice(first, second, sr, ratio=ratio, gap_ms=args.gap_ms)
-                m = _margins(vi_rec, en_rec, mixed, sr)
+                mixed = splice_once(first, second, sr, ratio=ratio, gap_ms=args.gap_ms)
+                m = margins_for(vi_rec, en_rec, mixed, sr)
                 rows.append(
                     {
                         "margin": m.margin,

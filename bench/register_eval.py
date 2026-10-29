@@ -248,7 +248,9 @@ def run(
             "sheet": str(register.sheet.relative_to(_ROOT)),
             "n_items": len(pairs),
             "metrics": "sacrebleu 13a BLEU, chrF++ (word_order=2), COMET wmt22-comet-da",
-            "mt_seconds": round(elapsed, 2),
+            # Host diagnostic only. Never cite this as latency: turnaround is a
+            # device measurement, in the app, on one clock.
+            "mt_seconds_host_diagnostic_only": round(elapsed, 2),
             "hardware": "host CPU, int8",
         },
         **metrics,
