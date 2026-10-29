@@ -100,6 +100,7 @@
 - **gates:** Record the shipped models and the measured timings
 - **notice:** Attribute the models that actually ship
 - Keep the gate arithmetic in the private track
+- **bench:** Record COMET in both directions, and index the register page
 
 ### Features
 
@@ -127,6 +128,7 @@
 - **training:** Cap target brevity and stop shipping step checkpoints
 - **training:** Add the pc2 ladder on the brevity-capped corpus
 - **bench:** Pin and measure the EN->VI leg
+- **bench:** Score the organizer register with BLEU, chrF++ and COMET
 
 ### Miscellaneous
 
@@ -162,6 +164,7 @@
 - **codeowners:** Describe the repo under its current name([#150](https://github.com/TanKhoiTV/kavi-benchmark/pull/150))
 - **ci:** Mint the changelog token with the App's client ID([#154](https://github.com/TanKhoiTV/kavi-benchmark/pull/154))
 - **data:** Move the organizer corpus into the repo, and stop reading ~/Downloads
+- **deps:** Declare the AI Hub tooling as an opt-in qairt group
 
 ### Refactoring
 
