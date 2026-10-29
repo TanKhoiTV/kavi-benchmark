@@ -32,7 +32,7 @@ This is the reference point every status line is judged against, and it is delib
 | **ADR-012** *ASR thread tuning* | Proposed | Thread counts are measured and closed — for MT (55 ms across 2/3/4 × priority) and TTS (4 optimal, more hurts). ASR itself is 71-91 ms of the chain and is no longer worth tuning | **stale-open, and lower value than it looks.** Accept or withdraw; the latency is not there |
 | **ADR-016** *Peak memory budget* | Accepted, revised 2026-07-27 | **1258 MB measured against the 1160 MB budget**, and the overrun was accepted deliberately when the EN checkpoint changed | **stale-current.** Needs a revision note; the budget line is now a historical target |
 | **ADR-018** *Tiered denoising slot* | Accepted, model pick **OPEN** | The host-side gate measured the Wiener reference on constructed noise and it did not pay at the operating point | **stale-open.** The model pick can close as "no denoiser in v1, slot stays"; leaving it open implies work is pending |
-| **ADR-022** *Energy-based VAD with speech timeout* | Accepted, with the noise-benchmark note | Every measurement since 2026-10-27 runs **Silero `ModelVad`**, and the 300 ms recommendation is a model-VAD number. The energy VAD's own benchmark refuted its fixed threshold | **stale-current, and the most misleading record in the register.** It describes a detector the pipeline does not use |
+| **ADR-022** *Energy-based VAD with speech timeout* | Accepted — the noise benchmark found **no energy threshold or timeout that meets the criteria** and concluded *"model-based VAD required, follow-up pending"* | The follow-up happened without a record: every measurement since 2026-10-27 runs **Silero `ModelVad`**, and the 300 ms figure is a model-VAD number | **stale-followup, not stale-current.** Corrected from an earlier reading of this audit: the record is honest about the *conclusion* and silent about the *adoption*, which is a different and smaller defect — the register points at a slot with no decision behind it, rather than at a detector we do not run |
 | **ADR-023** *Encoder on NPU, decoder on CPU* | Accepted | Both are on CPU: the QNN encoder path was built for the **Opus-MT** encoder, and the shipping encoder is M2M-100's | **stale-current, and now a work item.** ADR-034 records the consequence rather than hiding it |
 | **ADR-024** *Piper TTS stays on CPU* | Accepted | Piper is fallback-only; Supertonic is what runs | **harmless but historical.** Keep as the fallback's placement record |
 | **ADR-028** *Migrate v1 TTS to VieNeu-TTS (Phase 2)* | Proposed | Not started; the live TTS lever is the step count, and ZipVoice-Distill is the candidate under ADR-029 | **stale-open.** Either schedule it or move it behind the deadline explicitly |
@@ -46,7 +46,7 @@ This is the reference point every status line is judged against, and it is delib
 
 **Three structural fixes, rather than twelve status edits:**
 
-1. **VAD deserves one record, not a patched one.** ADR-022's energy detector was refuted by its own benchmark and has been silently replaced. Superseding it with a model-VAD record — including the 300 ms figure and the phantom-segment behaviour the on-device harness invariants record (INV-4, `kavi-android`) — would stop the register from pointing at a detector we do not run.
+1. **The VAD needs a record for the model it actually runs.** ADR-022 correctly refuted the energy threshold and left the model slot open; Silero was then adopted without a record. A model-VAD record — the 300 ms figure, the 60-90 ms offset between energy end and detector end, and the phantom-segment behaviour the on-device harness invariants record (INV-4, `kavi-android`) — would close a slot that currently has no decision behind it.
 2. **ASR and language detection should be separate records, and now are.** ADR-008's own status admits the split; ADR-033 carries the detection half. The remaining work is to make ADR-008 say *two single-language transducers* and stop claiming one architecture for both legs.
 3. **TTS needs one record with the step count in it.** ADR-009 (Supertonic, Proposed) and ADR-028 (VieNeu, Phase 2) both describe the same slot at different times, and neither states the number that decides the latency budget. The step count is the highest-value lever left, so it should be in a record, not in a config file that disagrees with the measurements.
 
@@ -55,10 +55,16 @@ This is the reference point every status line is judged against, and it is delib
 ## Not mine to close
 
 - **ADR-023 / the encoder:** does M2M-100 get a QNN encoder conversion, or does the encoder stay on CPU and the AI Hub profile become a historical artifact? This is the largest unpaid bill in the register.
-- **ADR-022:** is Silero the accepted VAD, and what happens to the energy-VAD noise benchmark — archived, or kept as the refutation?
+- **ADR-022's follow-up:** is Silero the accepted model VAD (and therefore a record), or is the slot still open with Silero as a stop-gap? Either answer needs writing down.
 - **ADR-009/028:** which TTS ships for the final, and at what step count? The answer decides whether beam search is affordable at all.
 - **ADR-012 and ADR-018:** close them or delete the intent, but leaving them *Proposed* implies work nobody is doing.
 
 ## What this audit changed today
 
 [ADR-034](ADR-034-m2m-both-directions.md) written; ADR-032 marked superseded; M2M-100 pinned in [`../../assets.lock.toml`](../../assets.lock.toml) with digests that regenerate byte-identically; open parameter #6 closed on the measured whole-pipeline numbers. The rest is recorded here rather than edited, because most of those records are private and their mechanism is not mine to rewrite from the public side.
+
+## Update — the same day, after this audit was merged
+
+The private register was repaired where the finding was a fact about the build rather than a decision to be made: ADR-008 now records the English leg's move to `parakeet-tdt-0.6b-v2`, ADR-009 and ADR-010 moved from *Proposed* to *Accepted* (both have shipped since July), and ADR-016 records 1258 MB measured against its 1160 MB budget. ADR-033 moved to *Accepted* and became release-blocking, because **ADR-035 — *direction is detected, never asked*** (`kavi-android`) withdraws the push-to-talk fallback that ADR-033 deferred to.
+
+That leaves two records on the "not mine to close" list rather than four: ADR-022's follow-up (does a model-VAD record exist or is the slot open?), and ADR-023's encoder placement, which ADR-034 reopens by shipping an encoder with no QNN path.
