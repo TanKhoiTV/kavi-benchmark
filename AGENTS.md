@@ -16,6 +16,7 @@ Guidance for AI coding agents working in this repository.
 - `docs/decisions/` — public register: ADR-032 (pending) + the open parameters measured here.
 - `.kavi.yaml` — the published gates and claims (the mechanism lives in `kavi-android/kavi-tuning.yaml`).
 - `models/`, `voices/`, `eval_data/` — fetched generated assets, gitignored.
+- `eval_data/organizer/` — the organizers' calibration set, 100 `VE-*` clips under `vi-en/` and 100 `EV-*` clips under `en-vi/`, each with the published `.xlsx`. Gitignored: their data, not ours to redistribute. Harness paths point here; a reference to `~/Downloads` is a bug.
 
 ## Conventions
 
