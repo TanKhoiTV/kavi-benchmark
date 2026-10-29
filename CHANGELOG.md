@@ -22,6 +22,7 @@
 - **training:** Authenticate with API tokens and read the real quota
 - **training:** Make the dataset upload and the kernel mount actually work
 - **training:** Tokenise targets with spm_target, not spm_source
+- **docs:** Correct the audit's ADR-022 finding, and record the repairs
 
 ### Documentation
 
