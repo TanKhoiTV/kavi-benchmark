@@ -49,10 +49,13 @@ A + B + C = 85% technical group.
 ## Gaps this exposes
 
 | gap | why it matters | action |
-|---|---|---|
-| The full chain has never been measured end to end | 1849 ms is a measurement of MT→first audio plus an arithmetic addition of 500 ms VAD and 83 ms ASR, which is exactly the "estimate substituted for a measurement" the template forbids | measure ASR→MT→TTS in one process, in one run, with logs |
+| --- | --- | --- |
+| ~~The full chain has never been measured end to end~~ **closed 2026-10-29** | the template forbids substituting an arithmetic sum for a measurement | measured: one process, one clock, VAD in the loop, 200 organizer clips — VI→EN 1607 ms p50 / 22.00 BLEU / 92 of 99 inside the gate; EN→VI 2477 ms / 23.48 BLEU / 11 of 99 |
+| **EN→VI misses the 2.0 s gate** (successor to the row above) | it is the direction that carries the English side, and the gate is a hard published number | see [`HANDOFF.md`](../../HANDOFF.md) next steps: speculation on the near-end prefix, then the TTS step count |
+| No live-microphone measurement | every number above is replayed register audio; the device's own mic path supplies near-silence in testing | wire `AudioRecord` → VAD → pipeline to the UI and re-measure |
 | Only one language pair | pair count is scored inside the 45% | decide whether VI↔EN alone is the honest submission, or add a second pair |
-| Hidden benchmark is 1,000 sentences/pair | MT quality was measured on 50 items | run the larger eval and report BLEU with the metric named |
+| Hidden benchmark is 1,000 sentences/pair | the largest eval run so far is 200 pairs (100 register, 100 FLEURS) | run the larger eval and report BLEU with the metric named |
+| COMET is never measured | the Luma criteria name BLEU **and** COMET; only BLEU has been reported | score COMET on the register pairs and publish it beside BLEU |
 | Only one device tested | minimum requirements must be labelled | state SM8550 tested; everything else estimated |
 | No 30-minute scenario rehearsal | a mandatory deliverable, and criterion C asks whether the scenario completed | build and run the script |
 | No packaged installable build | mandatory, and it is the fallback path to the video | produce the APK + instructions |

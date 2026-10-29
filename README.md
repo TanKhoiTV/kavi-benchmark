@@ -56,7 +56,14 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/) and 
 
 Host-side track, actively measured. The prior implementation is archived in `aivoice-2026/archive/`; the v0 benchmark harness lives in `bench/`; application source is in the private `kavi-android` repository.
 
-The on-device turnaround gate is **met and measured** — 1849.4 ms median, 10/10 runs inside the 2.0 s budget, peak RSS 589 MB on the target phone. That figure is MT-to-first-audio measured plus 500 ms VAD and 83 ms ASR added arithmetically; a single end-to-end run of the whole chain is the open measurement and the first item in [`HANDOFF.md`](HANDOFF.md).
+The turnaround gate is now **measured end to end**, in one process on one clock, over the organizers' own 200-clip calibration set (100 `VE-*`, 100 `EV-*`), with every model choice resolving to what actually ships:
+
+| direction | first audio p50 | inside 2.0 s | BLEU vs organizer gold |
+| --- | --- | --- | --- |
+| VI→EN | **1607 ms** | 92/99 | 22.00 |
+| EN→VI | 2477 ms | 11/99 | 23.48 |
+
+So the gate holds on the Vietnamese side and **does not hold on the English side** — the open gate this repository exists to close. Peak RSS is 1258 MB against the published 1160 MB budget, with memory treated as a low-priority gate for Round 3. The previous headline in this README (1849.4 ms, 589 MB) was a MT-to-first-audio measurement plus an arithmetic addition of VAD and ASR; the current figures are a single run of the whole chain, which is what the submission template requires.
 
 Phase-3 prototype submission is due **13/11/2026, 23:59**. Requirements and gaps: [`docs/reference/phase3-submission-requirements.md`](docs/reference/phase3-submission-requirements.md).
 
