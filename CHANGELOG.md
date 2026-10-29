@@ -21,6 +21,7 @@
 - **bench:** Fail with a message when a --dim value is not an integer
 - **training:** Authenticate with API tokens and read the real quota
 - **training:** Make the dataset upload and the kernel mount actually work
+- **training:** Tokenise targets with spm_target, not spm_source
 
 ### Documentation
 
@@ -85,6 +86,20 @@
 - **bench:** Plan the MT fine-tune data against the measured baseline
 - **bench:** Count the FLEURS train split at fetch time, not from memory
 - **decisions:** Price beam=4 on the device for open parameter #6
+- **bench:** Correct the Opus-MT licence and flag the ASR NC-ND terms
+- **bench:** Record the Apache-2.0 ASR checkpoint as the shipping one
+- Record the shipped ASR checkpoint and its data provenance
+- **bench:** Qualify the EN->VI baseline with the register-length failure
+- **bench:** EN->VI ships on M2M-100, measured on the register
+- **bench:** Record both MT directions through the app bridge
+- **bench:** Text conditioning is worth 20 BLEU
+- **bench:** VI->EN should move to M2M, measured
+- **bench:** The terminal mark is worth 1.5 BLEU
+- Normalize line endings and unwrapping in the MT baseline note
+- Bring the public status pages up to the 2026-10-29 measurements
+- **gates:** Record the shipped models and the measured timings
+- **notice:** Attribute the models that actually ship
+- Keep the gate arithmetic in the private track
 
 ### Features
 
@@ -107,6 +122,11 @@
 - **bench:** Justify vad_speech_timeout_ms from measured pause distributions
 - **bench:** Test whether a text gate can replace the silence timeout
 - **training:** Set up the MT fine-tune lanes across four Kaggle accounts
+- **training:** Require punctuated targets and ASR-shaped source
+- **training:** Add the pcfix lane that isolates the tokenizer fix
+- **training:** Cap target brevity and stop shipping step checkpoints
+- **training:** Add the pc2 ladder on the brevity-capped corpus
+- **bench:** Pin and measure the EN->VI leg
 
 ### Miscellaneous
 
@@ -141,6 +161,7 @@
 - Name this repo kavi-benchmark in its own docs and config([#148](https://github.com/TanKhoiTV/kavi-benchmark/pull/148))
 - **codeowners:** Describe the repo under its current name([#150](https://github.com/TanKhoiTV/kavi-benchmark/pull/150))
 - **ci:** Mint the changelog token with the App's client ID([#154](https://github.com/TanKhoiTV/kavi-benchmark/pull/154))
+- **data:** Move the organizer corpus into the repo, and stop reading ~/Downloads
 
 ### Refactoring
 
@@ -150,6 +171,10 @@
 - **env:** Resolve SDK/NDK paths in one platform-aware module([#136](https://github.com/TanKhoiTV/kavi-benchmark/pull/136))
 - **config:** Split .kavi.yaml into published gates and private tuning([#146](https://github.com/TanKhoiTV/kavi-benchmark/pull/146))
 - Trim the benchmark repo to the host-side track([#147](https://github.com/TanKhoiTV/kavi-benchmark/pull/147))
+
+### Styling
+
+- **training:** Apply ruff format to the launch and data-prep scripts
 
 ### Testing
 
