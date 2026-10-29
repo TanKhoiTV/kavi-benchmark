@@ -131,6 +131,7 @@
 - **training:** Add the pc2 ladder on the brevity-capped corpus
 - **bench:** Pin and measure the EN->VI leg
 - **bench:** Score the organizer register with BLEU, chrF++ and COMET
+- **bench:** Measure what code-switching does to the confidence signal
 
 ### Miscellaneous
 
