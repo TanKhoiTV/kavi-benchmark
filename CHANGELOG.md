@@ -101,6 +101,7 @@
 - **notice:** Attribute the models that actually ship
 - Keep the gate arithmetic in the private track
 - **bench:** Record COMET in both directions, and index the register page
+- **adr:** Supersede the Opus-MT pin, and audit a register that had rotted
 
 ### Features
 
@@ -165,6 +166,7 @@
 - **ci:** Mint the changelog token with the App's client ID([#154](https://github.com/TanKhoiTV/kavi-benchmark/pull/154))
 - **data:** Move the organizer corpus into the repo, and stop reading ~/Downloads
 - **deps:** Declare the AI Hub tooling as an opt-in qairt group
+- **assets:** Pin the MT that ships, and document the checkpoint we cannot fetch
 
 ### Refactoring
 
