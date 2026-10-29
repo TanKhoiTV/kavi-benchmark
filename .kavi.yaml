@@ -19,21 +19,57 @@ metadata:
   description: "Kavi benchmark — published gates and claims"
   target_device: "Meizu 21 Note (Snapdragon 8 Gen 2 / SM8550 / Hexagon HTP v73)"
   target_android: 16 # API 36
-  last_updated: "2026-10-24" # split: the mechanism moved to kavi-android/kavi-tuning.yaml
+  last_updated: "2026-10-29" # split: the mechanism moved to kavi-android/kavi-tuning.yaml
 
-# ── ASR gates (Dual Zipformer, ADR-008) ────────────────────────────────────
+# ── ASR (dual single-language transducers, ADR-008 / ADR-033) ───────────────
+#
+# Two checkpoints, one per language, both offline transducers behind the same
+# sherpa-onnx interface. The EN leg is no longer a zipformer: ADR-008's own
+# risk register named "fall back to another EN model if the zipformer
+# underperforms on Vietnamese-accented English" as the condition, and that is
+# what the gold-scored sweep found (27.83% -> 12.20% WER on the organizer EV
+# gold). Licences are recorded in NOTICE.
 
 asr:
   gates:
     rtf: 0.05 # hard gate
     rtf_desktop_benchmark: 0.011 # 1 thread, 3.74 s clip (sherpa-onnx bench)
+  models:
+    vi:
+      checkpoint: "zzasdf/viet_iter3_pseudo_label" # icefall zipformer, Apache-2.0
+      wer: "2.0% whole-clip, 2.7% through the shipping VAD-segmented path"
+      reference: "organizer VE gold (100 clips / 808 words)"
+    en:
+      checkpoint: "parakeet-tdt-0.6b-v2" # NeMo transducer, CC-BY-4.0
+      wer: "12.20% host, 11.98% on the SM8550"
+      reference: "organizer EV gold (100 clips)"
+      superseded: "zipformer-small-en-2023-06-26 (27.83% on the same gold)"
+  language_detection:
+    method: "argmax of mean per-token log-probability per recogniser" # ADR-033
+    status: "host-measured 97.0% correct direction on clean audio, both directions; noise and code-switching unmeasured; the Android binding exposes no per-token confidence, so direction is explicit (push-to-talk) today"
 
-# ── MT (Opus-MT, ADR-014 / ADR-032) ────────────────────────────────────────
+# ── MT (M2M-100, ADR-032) ──────────────────────────────────────────────────
+#
+# One model for both directions: `__vi__`/`__en__` source token plus a target
+# prefix, one BPE tokenizer. Opus-MT is measured and superseded in the app -
+# M2M scores 23.66 against 13.83 BLEU on ASR-shaped register input - and stays
+# in `bench/` as the harness baseline.
 
 mt:
-  model: "Helsinki-NLP/opus-mt-vi-en"
+  model: "facebook/m2m100_418m"
+  directions:
+    vi-en:
+      source_token: "__vi__"
+      target_prefix: "__en__"
+    en-vi:
+      source_token: "__en__"
+      target_prefix: "__vi__"
   decoding:
-    method: "greedy" # beam=1; beam=4 deferred to Phase 5 (ADR-007 §MT, #115)
+    method: "greedy" # beam=1; beam 3 is +2.12 BLEU for 217 ms, deferred (ADR-007 §MT, #115)
+  bleu:
+    vi-en: 23.66 # organizer register gold, MT only, ASR-shaped input
+    en-vi: 21.51 # organizer register gold, MT only
+  superseded: "Helsinki-NLP/opus-mt-vi-en (Apache-2.0) - 13.83 BLEU on the same register input"
 
 # ── TTS (Supertonic Phase 1 → VieNeu-TTS Phase 2, ADR-009) ──────────────────
 
@@ -65,11 +101,30 @@ memory:
     qnnlibs_and_rss_mb: 120 # trimmed 8 .so + sherpa libs + c++_shared
   unaccounted_mb: 454 # deliberate headroom for OS RSS, transient allocations, safety margin
   verify_method: "readPeakRssKb / VmPeak per stage on-device"
+  # Measured, not budgeted: the breakdown above is the plan the ADRs approved and
+  # it is 98 MB short of reality. Memory is treated as a low-priority gate for
+  # Round 3 - the shipped models are the ones that make the quality numbers - so
+  # the overrun is recorded rather than traded away.
+  measured_peak_mb: 1258 # full stack on the Meizu 21 Note, both directions on M2M-100
+  measured_overrun_mb: 98
+  previous_measured_peak_mb: 1667 # while Opus-MT was co-resident with M2M-100
 
 # ── Pipeline timing ─────────────────────────────────────────────────────────
 
 timing:
   turnaround_gate_sec: 2.0 # EOS→SA hard gate
+  # One process, one clock, VAD-segmented, 5 diffusion steps, greedy, organizer
+  # register audio, n=99 per direction.
+  measured_first_audio_p50_ms:
+    vi-en: 1607
+    en-vi: 2477 # parakeet EN ASR; 2188 with the superseded zipformer
+  measured_gate_compliance:
+    vi-en: "92/99"
+    en-vi: "11/99"
+  open_gate: "EN->VI misses 2.0 s. Two levers have measured support - starting the chain before the endpoint closes, and the TTS step count - and both must not regress the 200 calibration clips. The gate arithmetic behind the first is private-track material; what is public is that its gain and its wasted compute are both measured rather than assumed."
+  bleu_end_to_end:
+    vi-en: 22.00 # n=99, against organizer EN gold
+    en-vi: 23.48 # parakeet EN ASR, against organizer VI gold
 
 # ── Runtime pins that are claims in their own right ─────────────────────────
 

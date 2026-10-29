@@ -29,6 +29,7 @@ import json
 import os
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 from .lanes import LANES, schedule
@@ -165,7 +166,7 @@ def account_env(account: dict) -> dict:
 
 
 def run_cli(
-    account: dict, *args: str, dry: bool = False
+    account: dict, *args: str, dry: bool = False, cwd: Path | None = None
 ) -> subprocess.CompletedProcess:
     cmd = ["kaggle", *args]
     if dry:
@@ -174,6 +175,7 @@ def run_cli(
     return subprocess.run(
         cmd,
         env=account_env(account),
+        cwd=str(cwd) if cwd else None,
         text=True,
         # The CLI draws Unicode progress bars; on Windows the default cp932 decoder
         # kills the reader thread with UnicodeDecodeError before we see the result.
@@ -418,39 +420,84 @@ def cmd_check(args: argparse.Namespace) -> int:
     return 0
 
 
-def push_dataset(account: dict, stage: Path, dry: bool) -> tuple[bool, str]:
+def dataset_stamp(account: dict, ref: str) -> str:
+    """Return the remote dataset's lastUpdated stamp, or '' when it is absent.
+
+    `datasets create` exits 0 on a slug that already exists *without uploading
+    anything*, which is how a rebuilt corpus was reported as "created" while the
+    remote copy stayed on its first version. Comparing this stamp before and
+    after the call is the cheap way to tell a real upload from a no-op.
+    """
+    result = run_cli(account, "datasets", "list", "--mine", "--page-size", "60")
+    for line in (result.stdout or "").splitlines():
+        parts = line.split()
+        if not parts or parts[0] != ref:
+            continue
+        for i, part in enumerate(parts):
+            if (
+                len(part) == 10
+                and part[4] == "-"
+                and part[7] == "-"
+                and part[:4].isdigit()
+            ):
+                return f"{part} {parts[i + 1]}" if i + 1 < len(parts) else part
+        return line.strip()
+    return ""
+
+
+def push_dataset(
+    account: dict, stage: Path, dry: bool, existing: str | None
+) -> tuple[bool, str]:
     """Create the dataset, or add a version when one already exists remotely.
 
-    Judged on the exit code and the returned message rather than on the ledger:
-    an earlier version recorded the dataset before the upload succeeded, so a
-    failed create left the ledger claiming a dataset that did not exist and the
-    next run tried to version it (403).
+    The operation is chosen from the ledger rather than guessed from an error,
+    and the outcome is judged on the remote lastUpdated stamp rather than on the
+    exit code: a create against an existing slug succeeds silently and uploads
+    nothing, so an exit-code check reports a stale corpus as a fresh one.
     """
-    result = run_cli(
-        account, "datasets", "create", "-p", str(stage), "--dir-mode", "zip", dry=dry
+    ref = f"{account['username']}/{DATASET_SLUG}"
+    # The CLI caches resumable upload state at <temp>/.kaggle/uploads/<-p>_<file>.json,
+    # embedding the -p string in a filename. A nested relative path therefore
+    # cannot be created on Windows (FileNotFoundError on the cache .json), which
+    # is why the upload is run from inside the stage dir with -p '.': the cache
+    # name then holds no separators.
+    create = ["datasets", "create", "-p", ".", "--dir-mode", "zip"]
+    version = [
+        "datasets",
+        "version",
+        "-p",
+        ".",
+        "--dir-mode",
+        "zip",
+        "-m",
+        "lane sweep inputs",
+    ]
+    attempts = (
+        [("new version", version)]
+        if existing
+        else [("created", create), ("new version", version)]
     )
-    if result.returncode == 0:
-        return True, "created"
-    blob = ((result.stdout or "") + (result.stderr or "")).lower()
-    if "already exist" in blob or "409" in blob:
-        result = run_cli(
-            account,
-            "datasets",
-            "version",
-            "-p",
-            str(stage),
-            "-m",
-            "lane sweep inputs",
-            dry=dry,
-        )
-        if result.returncode == 0:
-            return True, "new version"
+    before = dataset_stamp(account, ref) if existing else ""
+
+    message = "upload failed"
+    for how, argv in attempts:
+        result = run_cli(account, *argv, dry=dry, cwd=stage)
         tail = ((result.stdout or "") + (result.stderr or "")).strip().splitlines()
-        return False, tail[-1][:120] if tail else "version failed"
-    tail = ((result.stdout or "") + (result.stderr or "")).strip().splitlines()
-    return False, tail[-1][
-        :120
-    ] if tail else f"create failed (exit {result.returncode})"
+        message = tail[-1][:120] if tail else f"{how} failed (exit {result.returncode})"
+        if dry:
+            return True, f"{how} (dry)"
+        if result.returncode != 0:
+            continue
+        # `datasets list` lags the upload, so poll before calling it a no-op: a
+        # version that landed seconds ago still reports the previous stamp.
+        after = dataset_stamp(account, ref)
+        for _ in range(12):
+            if after and after != before:
+                return True, how
+            time.sleep(10)
+            after = dataset_stamp(account, ref)
+        message = f"{how} left the dataset unchanged (lastUpdated {after or 'absent'})"
+    return False, message
 
 
 def cmd_dataset(args: argparse.Namespace) -> int:
@@ -479,7 +526,7 @@ def cmd_dataset(args: argparse.Namespace) -> int:
                 dry=True,
             )
             continue
-        ok, how = push_dataset(acct, stage, dry=False)
+        ok, how = push_dataset(acct, stage, dry=False, existing=existing)
         print(f"{acct['name']}: dataset {meta['id']} -> {how}")
         if ok:
             ledger["dataset"][acct["name"]] = meta["id"]

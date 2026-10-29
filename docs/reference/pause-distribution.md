@@ -75,9 +75,9 @@ The remaining option is not a number but a rule: endpoint on evidence that the s
 
 ```bash
 python -m bench.pause_distribution \
-    --wav-dir "VI=.../Vie-Eng dataset/Vie-Eng/wav" \
-    --wav-dir "EN=.../Vie-Eng dataset/Eng-Vie/wav" \
+    --wav-dir "VI=eval_data/organizer/vi-en/wav" \
+    --wav-dir "EN=eval_data/organizer/en-vi/wav" \
     --out bench-results/pause-distribution.json
 ```
 
-`--thresholds` defaults to `0.5 0.7`; `--limit` shortens the run. The JSON carries every per-clip pause list, the per-candidate counts, and the per-corpus summary used above.
+The organizer audio and sheets live in `eval_data/organizer/` (`vi-en/` and `en-vi/`, each with `wav/` plus the published `.xlsx`), which is gitignored like the rest of `eval_data/` - the data is the organizers' to redistribute, not ours. Nothing outside this repo needs to be read to reproduce a number, so a path pointing into `~/Downloads` is a bug in the harness, not a local configuration.

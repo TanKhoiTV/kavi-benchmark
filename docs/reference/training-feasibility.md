@@ -25,8 +25,8 @@ Two cautions:
 
 | project | params | realistic T4-hours | what it buys | licence | verdict |
 |---|---|---|---|---|---|
-| **MT fine-tune** (Opus-MT vi-en) | 77 M | **5-20** | domain accuracy on the actual scenario; **reliable punctuation** for chunk cutting | Opus-MT CC-BY-4.0, derivatives fine | **do this** |
-| ASR fine-tune (Zipformer VI) | ~30 M | 20-60 | WER in factory noise — the field test environment has fans and foot traffic | model Apache-2.0; data licences vary | stretch |
+| **MT fine-tune** (Opus-MT vi-en) | 77 M | **5-20** | domain accuracy on the actual scenario; **reliable punctuation** for chunk cutting | Opus-MT **Apache-2.0** (verified on the model card; NOT CC-BY-4.0), derivatives fine | **do this** |
+| ASR fine-tune (Zipformer VI) | ~68 M | 20-60 | WER in factory noise — the field test environment has fans and foot traffic | shipping checkpoint is **Apache-2.0** (GigaSpeech2 Vietnamese zipformer); the earlier 30 M checkpoint was CC-BY-NC-ND and is no longer used | stretch |
 | TTS few-step distillation | 20-160 M | 100-200 | removes the ~620 ms TTS fixed cost | Supertonic OpenRAIL-M; training code not ours | **not now** |
 | VITS from scratch (VI) | ~30 M | 100-300 | a licence-clean 1-NFE Vietnamese TTS | data licences vary | not now |
 

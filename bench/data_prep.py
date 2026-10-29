@@ -461,6 +461,7 @@ def build_mt_manifest(
     out_path: str,
     workdir: str = "eval_data",
     n_items: int | None = None,
+    direction: str = "vi->en",
 ) -> None:
     """Build a text-only vi->en MT eval manifest from the full FLEURS parallel pool.
 
@@ -494,6 +495,11 @@ def build_mt_manifest(
         for uid in sorted(set(vi_text) & set(en_text))
         if vi_text[uid] and en_text[uid]
     ]
+    if direction == "en->vi":
+        pairs = [(uid, en_t, vi_t) for uid, vi_t, en_t in pairs]
+        src_lang, tag = "en", "en-vi"
+    else:
+        src_lang, tag = "vi", "vi-en"
     if n_items is not None and 0 < n_items < len(pairs):
         # Reuse the shared helper: the naive `round(step / 2 + i * step)` collapses
         # onto duplicate indices once n_items approaches len(pairs), emitting the
@@ -503,17 +509,17 @@ def build_mt_manifest(
 
     items = [
         EvalItem(
-            id=f"vi-en-mt-{uid}",
+            id=f"{tag}-mt-{uid}",
             stage="MT",
-            language="vi",
-            direction="vi->en",
-            input_text=vi_t,
-            reference_text=en_t,
+            language=src_lang,
+            direction=direction,
+            input_text=src_t,
+            reference_text=tgt_t,
         )
-        for uid, vi_t, en_t in pairs
+        for uid, src_t, tgt_t in pairs
     ]
     RunManifest(items=items).to_json(out_path)
-    print(f"MT: added {len(items)} VI->EN parallel pairs -> {out_path}")
+    print(f"MT: added {len(items)} {direction.upper()} parallel pairs -> {out_path}")
 
 
 def build_lean_manifest(

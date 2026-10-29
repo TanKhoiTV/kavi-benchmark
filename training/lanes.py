@@ -35,6 +35,43 @@ LANES: dict[str, dict] = {
         "epochs": 1,
         "note": "one epoch is often enough for domain shifts",
     },
+    # The punctuation-contract lane. The corpus was rebuilt so every English
+    # target carries a terminal mark and the source matches ASR (lowercase,
+    # mostly unpunctuated): the first sweep trained on targets that were only
+    # 71% punctuated, and the model reproduced that rate as 65/100 instead of
+    # the gold's 100/100. One epoch at the conservative end of the adaptation
+    # bracket is the decisive test of the contract, so it is not the sweep.
+    "pc-mix-lr1e5-e1": {
+        "lr": 1e-5,
+        "epochs": 1,
+        "note": "punctuation-contract mix, conservative LR, one epoch",
+    },
+    # The tokenizer fix. Every lane above encoded labels with spm_source, so they
+    # all learned a corrupted target distribution. Same corpus and schedule as
+    # pc-mix-lr1e5-e1, so the delta isolates the fix itself.
+    "pcfix-lr1e5-e1": {
+        "lr": 1e-5,
+        "epochs": 1,
+        "note": "text_target fix on the contract mix, one epoch",
+    },
+    # The ladder that matters now: the tokenizer fix is in every lane, so these
+    # vary only what is still open. pc2 adds the target-brevity cap (mix mean
+    # 10.59 -> 9.76 against a gold 8.46) on top of the punctuation contract.
+    "pc2-lr1e5-e1": {
+        "lr": 1e-5,
+        "epochs": 1,
+        "note": "contract + brevity, conservative LR, one epoch",
+    },
+    "pc2-lr3e5-e1": {
+        "lr": 3e-5,
+        "epochs": 1,
+        "note": "contract + brevity at the conventional adaptation rate",
+    },
+    "pc2-lr1e5-e3": {
+        "lr": 1e-5,
+        "epochs": 3,
+        "note": "does more exposure fit the domain or forget FLEURS",
+    },
     # Learning-rate bracket around the baseline.
     "mix-lr1e5-e3": {
         "lr": 1e-5,

@@ -22,6 +22,7 @@ import argparse
 import json
 import math
 import os
+import shutil
 import time
 from pathlib import Path
 
@@ -55,12 +56,20 @@ class PairDataset(Dataset):
 
     def __getitem__(self, i: int) -> dict[str, torch.Tensor]:
         vi, en = self.rows[i]
+        # The two sides need their own SentencePiece model. MarianTokenizer
+        # encodes with spm_source by default, and this pair ships source.spm and
+        # target.spm as separately trained models that segment differently
+        # ("loading bay" is 10693 6915 via source, 18184 via target) - so
+        # tok(en) labels a target with ids the model reads as different pieces.
+        # text_target switches to spm_target. Training with tok(en) instead was
+        # why every lane landed near 8.8 BLEU with ~22-word output and no final
+        # period, whatever the learning rate, epoch count or corpus.
         src = self.tok(vi, max_length=self.max_src, truncation=True, padding=False)[
             "input_ids"
         ]
-        tgt = self.tok(en, max_length=self.max_tgt, truncation=True, padding=False)[
-            "input_ids"
-        ]
+        tgt = self.tok(
+            text_target=en, max_length=self.max_tgt, truncation=True, padding=False
+        )["input_ids"]
         return {"input_ids": torch.tensor(src), "labels": torch.tensor(tgt)}
 
 
@@ -126,6 +135,11 @@ def main() -> int:
         help="upsample-weight short targets: weight=(median_len/len)^alpha, clipped [0.5,2]; 0 = off",
     )
     ap.add_argument("--save-every", type=int, default=500)
+    ap.add_argument(
+        "--keep-steps",
+        action="store_true",
+        help="keep every step-* checkpoint in the output (default: prune after final)",
+    )
     ap.add_argument("--eval-every", type=int, default=500)
     ap.add_argument(
         "--max-hours", type=float, default=10.0, help="stop before the session cap"
@@ -352,6 +366,15 @@ def main() -> int:
             )
         )
         print(f"done at step {step}/{total}; wrote {final}", flush=True)
+        # The session output is what gets pulled back, and a step-* checkpoint
+        # carries optimizer state: 824 MB against 289 MB for the model alone, so
+        # six of them made every pull 5.1 GB and 15+ minutes around a 5-minute
+        # lane. Resume only ever needs the newest one inside a session, so the
+        # history is pruned once training completes.
+        if not args.keep_steps:
+            for old in sorted(out.glob("step-*")):
+                shutil.rmtree(old, ignore_errors=True)
+            print(f"pruned step-* checkpoints under {out}", flush=True)
     if ddp:
         torch.distributed.destroy_process_group()
     return 0
