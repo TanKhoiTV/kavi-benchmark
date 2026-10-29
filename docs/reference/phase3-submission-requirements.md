@@ -55,7 +55,7 @@ A + B + C = 85% technical group.
 | No live-microphone measurement | every number above is replayed register audio; the device's own mic path supplies near-silence in testing | wire `AudioRecord` → VAD → pipeline to the UI and re-measure |
 | Only one language pair | pair count is scored inside the 45% | decide whether VI↔EN alone is the honest submission, or add a second pair |
 | Hidden benchmark is 1,000 sentences/pair | the largest eval run so far is 200 pairs (100 register, 100 FLEURS) | run the larger eval and report BLEU with the metric named |
-| COMET is never measured | the Luma criteria name BLEU **and** COMET; only BLEU has been reported | score COMET on the register pairs and publish it beside BLEU |
+| ~~COMET is never measured~~ **closed 2026-10-29** | the Luma criteria name BLEU **and** COMET; only BLEU had been reported | measured on the register pairs: VI→EN 0.8100, EN→VI 0.7664, with BLEU and chrF++ beside them — [`mt-en-vi-baseline.md`](mt-en-vi-baseline.md) |
 | Only one device tested | minimum requirements must be labelled | state SM8550 tested; everything else estimated |
 | No 30-minute scenario rehearsal | a mandatory deliverable, and criterion C asks whether the scenario completed | build and run the script |
 | No packaged installable build | mandatory, and it is the fallback path to the video | produce the APK + instructions |

@@ -172,3 +172,34 @@ ASR output carries no punctuation, so the pipeline appends a terminal mark befor
 | gold punctuation | 25.55 |
 
 The rule fires on 21/100 utterances where gold has 35/100 questions and is correct on 86/100, so this is a partial but free recovery of the punctuation gap — the same +1.47 BLEU that a beam sweep costs 217 ms for. Gold punctuation still leads by 4.2 BLEU, which is the size of the prize the missing Vietnamese punctuation model is holding.
+
+---
+
+## COMET is now measured, in both directions
+
+Measured 2026-10-29 on the host (CTranslate2 int8, CPU, greedy) over the organizers' published 100 VI→EN and 100 EN→VI pairs. The contest's scoring criteria name **BLEU + COMET** and only BLEU had ever been reported, so this closes that gap with the metric the judges actually read.
+
+| direction | n | BLEU | chrF++ | COMET |
+| --- | --- | --- | --- | --- |
+| VI→EN | 100 | 28.14 | 47.61 | **0.8100** |
+| EN→VI | 100 | 26.80 | 49.53 | **0.7664** |
+
+This is sentence-level MT on the sheets' own source column, which is the same condition as the "clean input" rows above — so 28.14 reproducing the earlier 28.54 to within 0.4 is a cross-check on both, not a new claim. It is **not** comparable to the 21.32 / 21.51 rows: those went through the app's clause-level cut policy, and sentence-level input is the easier condition.
+
+### What the two directions say
+
+1. **The metrics disagree about which direction is better, and that is the finding.** EN→VI has the higher surface score (chrF++ 49.53 against 47.61) and the lower semantic one (COMET 0.7664 against 0.8100). N-gram overlap flatters EN→VI's longer, more literal Vietnamese; the semantic model prefers VI→EN. Reporting either alone would have picked a winner that the other metric denies.
+2. **Neither direction has a comfortable margin.** A COMET around 0.78–0.81 on short scripted sentences is respectable for a 418M model and well short of what a production translator would report.
+3. **The per-item spread is where the demo risk lives**: p10 0.643 / p50 0.845 / p90 0.931 for VI→EN and 0.599 / 0.782 / 0.926 for EN→VI. Roughly one utterance in ten scores at or below 0.64, and those are the ones a judge sitting in the room will hear — a corpus mean hides them.
+4. **Source distribution caveat.** The EN→VI sheet's English column is the organizers' *normalized* text, with numbers spelled out ("one thousand nine hundred and ninety…"), so it is not natural written English and its scores are not comparable to a web-text baseline. `bench/register_eval.py` records this in every artifact rather than leaving it to the reader.
+
+### Reproduce
+
+```bash
+uv run python -m bench.register_eval              # both directions: BLEU + chrF++ + COMET
+uv run python -m bench.register_eval --no-comet   # skip the ~2 GB COMET checkpoint
+```
+
+Artifacts land in `bench-results/register-mt/{vi-en,en-vi}.json` with per-item hypotheses and scores plus the full provenance block (model export, decode settings, sheet path, tokenizer, n). The corpus stays gitignored; the script names a missing sheet instead of scoring zero items, because a silent skip looks like a pass.
+
+Before this, the register MT numbers came from scripts that lived outside every repository. They now come from a module in `bench/`, which is what makes them reproducible by someone who is not the person who measured them.
