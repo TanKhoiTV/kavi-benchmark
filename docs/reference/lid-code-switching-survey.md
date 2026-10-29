@@ -63,6 +63,8 @@ i.e. normalise each side of the comparison by its own distribution before subtra
 
 **[APPLICATION]** Our `P(VI | share)` curve is the right *diagnostic*, and the wrong *metric* to publish. If a detection number goes into the submission, it should be per-language recall plus a calibration-aware figure, computed on held-out labelled audio with the normalisation and calibration parameters fitted on a disjoint set.
 
+**[OURS] Tested, and it does not rescue the comparison.** [`lid-statistic.md`](lid-statistic.md) runs five statistics — mean, median, top-k, z-normalised and t-normalised — over the same token arrays at n=100. Z-normalisation is the best of them at every point above 40% share and the only one with a perfect clean anchor, but at a 25% Vietnamese share every statistic still says Vietnamese 2-3% of the time. The prediction failed for a reason worth recording: the comparison is not *miscalibrated*, it is measuring which model is less damaged, and no monotone transform of two means recovers a decision the arithmetic never encoded. The lesson generalises — a normalisation cure is worth testing before it is worth adopting.
+
 ## 4. What shipping products actually do
 
 This is the part that changes our design, because the best hands-free products mostly **avoid** acoustic language ID.
@@ -84,11 +86,11 @@ This is the part that changes our design, because the best hands-free products m
 
 Ordered by evidence strength, not novelty:
 
-1. **Replace the statistic before replacing the model.** Utterance-level averaging is the documented weak link, and the normalisation literature exists precisely for comparing heterogeneous systems. Concretely, on the same recorded audio, compare: raw mean margin (current), **per-model z-normalised** margin, **median** token confidence, **top-k mean**, and **token-vote share** (fraction of tokens preferring each language). Gate: a monotone curve over the share sweep, ≥95% at register length, and no material rise in false-VI on clean English.
+1. **~~Replace the statistic~~ — done, and it does not work.** Five candidates at n=100 leave a 25% Vietnamese share at 2-3%; see [`lid-statistic.md`](lid-statistic.md). The statistic was not the defect. What survives from that run is z-normalisation as the *best* statistic (keep it: 4-7 points at 70% share, perfect clean anchor) and the finding that top-k confidence selection destroys the signal.
 2. **Calibrate, do not hand-tune.** Fit the operating point on held-out audio with a one-parameter logistic map (the honest version of δ), and report per-language recall; keep `P(VI | share)` as the diagnostic plot.
 3. **Make turn history explicit.** Both the literature and the commercial systems treat speaker turn as signal. In a two-party exchange it is the only evidence that survives code-switching.
 4. **Report at the right granularity.** Per-turn routing accuracy with a stated mixed-speech class, not a single "LID accuracy".
-5. **If a real code-switched set becomes available, use it.** CanVEC (Nguyen & Bryant, LREC 2020) is the VN–EN reference — 10 h, 45 bilingual speakers, word-level language tags separating borrowings from true switches, available for research on request. VietPrism (993 h) and ViMedCSS (34 h, medical) are larger but have no gold LID tags. Until one is in hand, our splices are an upper bound and must be labelled as such.
+5. **The productive target is time, not arithmetic.** Decide per clause rather than per turn — the pipeline already cuts clauses for MT and TTS, so a per-clause decision sees mostly one language. The sweep's own construction is the argument: it spends most of its range on a contiguous foreign block spliced across two speakers, which is not how either realistic case behaves.
 
 **[APPLICATION]** A caveat on the tempting shortcut: for VI–EN both languages use the Latin script, so text-side LID is *weaker* here than for Mandarin–English — Vietnamese single-syllable function words collide with English tokens, and ASR frequently strips the diacritics that would otherwise be a giveaway. Published token-level LID F-scores for less-resourced pairs sit around 80-85, and are worse on single-word islands. Text plausibility is a tie-breaker, not the mechanism.
 
