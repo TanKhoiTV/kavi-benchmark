@@ -135,6 +135,7 @@
 - **bench:** Score the organizer register with BLEU, chrF++ and COMET
 - **bench:** Measure what code-switching does to the confidence signal
 - **bench:** The VI-share sweep, and the bias it exposes
+- **bench:** Five statistics on the same audio, and the normalisation hypothesis fails
 
 ### Miscellaneous
 
